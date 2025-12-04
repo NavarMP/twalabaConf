@@ -7,8 +7,8 @@ export default function Footer() {
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     <div className="mb-4 md:mb-0 text-center md:text-left">
                         <h3 className="text-xl font-bold font-poppins">SKSSF Twalaba Conference 2025</h3>
-                        <p className="text-sm text-gray-300 mt-1">December 5 & 6, 2025</p>
-                        <p className="text-sm text-gray-300">CBMS Islamic Academy, Vilayil-Parappur</p>
+                        <p className="text-sm text-gray-300 mt-1">05, 06 December 2025</p>
+                        <p className="text-sm text-gray-300">CBMS Islamic Academy, Vilayil-Parappur, Malappuram, Kerala</p>
                     </div>
 
                     <div className="flex space-x-6">

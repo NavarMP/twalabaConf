@@ -1,0 +1,98 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { FiUsers, FiCalendar, FiImage, FiLogOut, FiHome } from 'react-icons/fi'
+
+export default function AdminDashboard() {
+    const [loading, setLoading] = useState(true)
+    const router = useRouter()
+    const supabase = createClient()
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                router.push('/admin/login')
+            } else {
+                setLoading(false)
+            }
+        }
+        checkUser()
+    }, [router, supabase.auth])
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push('/admin/login')
+        router.refresh()
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        )
+    }
+
+    const menuItems = [
+        { href: '/admin/guests', icon: FiUsers, label: 'Guests', description: 'Manage distinguished guests' },
+        { href: '/admin/schedule', icon: FiCalendar, label: 'Schedule', description: 'Edit program schedule' },
+        { href: '/admin/gallery', icon: FiImage, label: 'Gallery', description: 'Manage photos & videos' },
+    ]
+
+    return (
+        <div className="min-h-screen bg-background">
+            {/* Header */}
+            <header className="bg-primary text-white py-4 px-6 shadow-lg">
+                <div className="max-w-7xl mx-auto flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                        <p className="text-white/70 text-sm">SKSSF Twalaba Conference 2025</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                        >
+                            <FiHome className="w-5 h-5" />
+                            <span>View Site</span>
+                        </Link>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent/90 transition-colors"
+                        >
+                            <FiLogOut className="w-5 h-5" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="max-w-7xl mx-auto py-12 px-6">
+                <h2 className="text-xl font-semibold text-foreground mb-8">Manage Content</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {menuItems.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className="group p-6 rounded-2xl bg-primary/5 border border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <item.icon className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-foreground">{item.label}</h3>
+                            </div>
+                            <p className="text-foreground/60">{item.description}</p>
+                        </Link>
+                    ))}
+                </div>
+            </main>
+        </div>
+    )
+}

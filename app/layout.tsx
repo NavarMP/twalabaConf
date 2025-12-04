@@ -17,7 +17,7 @@ const anekMalayalam = Anek_Malayalam({
 
 export const metadata: Metadata = {
   title: "SKSSF Twalaba Conference 2025",
-  description: "SKSSF Twalaba Conference 2025 at CBMS Islamic Academy, Vilayil-Parappur",
+  description: "SKSSF Twalaba Conference 2025 at CBMS Islamic Academy, Vilayil-Parappur, Malappuram, Kerala",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",

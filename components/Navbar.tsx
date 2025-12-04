@@ -39,7 +39,7 @@ export default function Navbar() {
                                     src="/assets/Logo.svg"
                                     alt="SKSSF Twalaba Conf Logo"
                                     fill
-                                    className="object-contain"
+                                    className="object-contain logo-dark-adaptive"
                                 />
                             </div>
                         </Link>

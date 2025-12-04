@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Cooper Black';
+  src: url('/assets/COOPBL.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-cooper {
+  font-family: 'Cooper Black', serif;
+}
+
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -18,13 +30,17 @@
   --accent: #fa6044;
 }
 
-[data-theme="dark"] {
+.dark {
   --background: #0a0a0a;
   --foreground: #ededed;
-  --primary: #1f3661;
-  /* Or lighter shade for dark mode if needed, but keeping brand color */
+  --primary: #4a6fa5;
   --secondary: #05cda9;
   --accent: #fa6044;
+}
+
+/* Invert logo colors in dark mode for better visibility */
+.dark .logo-dark-adaptive {
+  filter: brightness(0) invert(1);
 }
 
 body {
