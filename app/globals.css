@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --font-poppins: var(--font-poppins);
+  --font-anek: var(--font-anek-malayalam);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a18;
+  --primary: #1f3661;
+  --secondary: #05cda9;
+  --accent: #fa6044;
+}
+
+[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #1f3661;
+  /* Or lighter shade for dark mode if needed, but keeping brand color */
+  --secondary: #05cda9;
+  --accent: #fa6044;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-poppins), sans-serif;
+}

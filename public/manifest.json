@@ -1,0 +1,16 @@
+{
+  "name": "SKSSF Twalaba Conference 2025",
+  "short_name": "Twalaba Conf",
+  "description": "SKSSF Twalaba Conference 2025 at CBMS Islamic Academy, Vilayil-Parappur",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f3661",
+  "theme_color": "#1f3661",
+  "icons": [
+    {
+      "src": "/assets/Logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
