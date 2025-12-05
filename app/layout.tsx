@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins, Anek_Malayalam, Noto_Serif_Malayalam } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -44,8 +45,10 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${anekMalayalam.variable} ${notoSerifMalayalam.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -5,9 +5,11 @@ import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { FiDownload, FiMapPin, FiCalendar } from "react-icons/fi";
+import { FiDownload, FiMapPin, FiCalendar, FiHeart } from "react-icons/fi";
 import { createClient } from "@/lib/supabase/client";
 import { Guest, GalleryItem } from "@/types/database";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { scheduleData } from "@/lib/data/scheduleData";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -26,7 +28,11 @@ const staggerContainer = {
 export default function Home() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [filteredGallery, setFilteredGallery] = useState<GalleryItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'photo' | 'video'>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
   const supabase = createClient();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,10 +46,42 @@ export default function Home() {
         .from('gallery')
         .select('*')
         .order('display_order', { ascending: true });
-      if (galleryData) setGalleryItems(galleryData);
+      if (galleryData) {
+        setGalleryItems(galleryData);
+        setFilteredGallery(galleryData);
+      }
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    let result = [...galleryItems];
+
+    // Filter
+    if (activeTab !== 'all') {
+      result = result.filter(item => item.media_type === activeTab);
+    }
+
+    // Sort
+    if (sortBy === 'newest') {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === 'oldest') {
+      result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    } else if (sortBy === 'likes') {
+      result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    }
+
+    setFilteredGallery(result);
+  }, [galleryItems, activeTab, sortBy]);
+
+  const handleLike = async (id: string, currentLikes: number) => {
+    // Optimistic update
+    setGalleryItems(prev => prev.map(item =>
+      item.id === id ? { ...item, likes: (item.likes || 0) + 1 } : item
+    ));
+
+    await supabase.rpc('increment_likes', { row_id: id });
+  };
 
   return (
     <div className="min-h-screen flex flex-col font-poppins">
@@ -67,7 +105,7 @@ export default function Home() {
             variants={staggerContainer}
           >
             <motion.div variants={fadeInUp} className="mb-8 flex justify-center">
-              <div className="relative w-32 h-32 md:w-48 md:h-48">
+              <div className="relative w-48 h-48 md:w-64 md:h-64">
                 <Image
                   src="/assets/Logo.svg"
                   alt="Conference Logo"
@@ -82,7 +120,7 @@ export default function Home() {
               variants={fadeInUp}
               className="text-4xl md:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-6"
             >
-              <span className="font-cooper">SKSSF</span> Twalaba Conference 2025
+              <span className="font-cooper">SKSSF</span> {t.hero.title.replace("SKSSF ", "")}
             </motion.h1>
 
             <motion.div
@@ -91,12 +129,12 @@ export default function Home() {
             >
               <div className="flex items-center gap-2">
                 <FiCalendar className="text-accent" />
-                <span>05, 06 DEC 2025 -FRI, SAT</span>
+                <span>{t.hero.date}</span>
               </div>
               <div className="hidden md:block w-2 h-2 bg-foreground/20 rounded-full"></div>
               <div className="flex items-center gap-2">
                 <FiMapPin className="text-accent" />
-                <span>CBMS Islamic Academy, Vilayil-Parappur, Malappuram</span>
+                <span>{t.hero.location}</span>
               </div>
             </motion.div>
 
@@ -105,7 +143,7 @@ export default function Home() {
                 href="#schedule"
                 className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-full font-semibold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25"
               >
-                View Schedule
+                {t.hero.viewSchedule}
               </a>
             </motion.div>
           </motion.div>
@@ -121,9 +159,9 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               className="text-center max-w-3xl mx-auto"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-6">About The Conference</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-6">{t.about.title}</h2>
               <p className="text-lg text-foreground/80 leading-relaxed">
-                The SKSSF Twalaba Conference 2025 is a premier gathering of students and scholars, fostering intellectual growth and spiritual development. Join us for two days of inspiring sessions, discussions, and community building at the prestigious CBMS Islamic Academy.
+                {t.about.description}
               </p>
             </motion.div>
           </div>
@@ -139,17 +177,18 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">Program Schedule</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t.schedule.title}</h2>
               <p className="text-lg text-foreground/80">
-                Explore the detailed timeline of events, sessions, and speakers.
+                {t.schedule.description}
               </p>
             </motion.div>
 
-            {/* Day 1 */}
+            {/* Download Brochure - Moved to Top */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+<<<<<<< Updated upstream
               className="mb-16"
             >
               <div className="bg-primary text-white py-4 px-6 rounded-t-xl">
@@ -380,6 +419,9 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center"
+=======
+              className="text-center mb-12"
+>>>>>>> Stashed changes
             >
               <a
                 href="/assets/Brochure.pdf"
@@ -387,18 +429,102 @@ export default function Home() {
                 className="inline-flex items-center gap-2 bg-accent text-white px-8 py-4 rounded-lg font-bold hover:bg-accent/90 transition-all shadow-lg hover:shadow-accent/25"
               >
                 <FiDownload className="text-xl" />
-                Download Full Brochure
+                {t.schedule.downloadBrochure}
               </a>
             </motion.div>
+
+            {/* Dynamic Schedule Rendering */}
+            {scheduleData.map((day, dayIndex) => (
+              <motion.div
+                key={dayIndex}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="mb-16"
+              >
+                <div className="bg-primary text-white py-4 px-6 rounded-t-xl">
+                  <h3 className={`text-2xl font-bold ${language === 'ml' ? 'font-anek' : ''}`}>{day.date[language]}</h3>
+                </div>
+                <div className="bg-background border border-primary/20 rounded-b-xl overflow-hidden">
+                  {day.events.map((event, eventIndex) => (
+                    <div
+                      key={eventIndex}
+                      className={`p-6 border-b border-primary/10 ${event.type === 'session' ? 'bg-secondary/5' : event.type === 'special' ? 'bg-accent/10' : ''}`}
+                    >
+                      <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${event.type === 'special' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
+                          {event.time}
+                        </span>
+                        <h4 className={`text-xl font-bold ${event.type === 'special' ? 'text-primary' : 'text-accent'} ${language === 'ml' ? 'font-anek' : ''}`}>
+                          {event.title[language]}
+                        </h4>
+                      </div>
+
+                      {event.subtitle && (
+                        <h5 className={`text-lg font-bold text-primary mb-2 ${language === 'ml' ? 'font-anek' : ''}`}>
+                          {event.subtitle[language]}
+                        </h5>
+                      )}
+
+                      {event.details && (
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 text-foreground/90 ${language === 'ml' ? 'font-anek' : ''}`}>
+                          <div>
+                            {event.details.map((detail, i) => (
+                              <p key={i} className="mb-2">
+                                <span className="font-bold text-primary">{detail.label[language]}:</span> {detail.content[language]}
+                              </p>
+                            ))}
+                          </div>
+                          {event.list && (
+                            <div>
+                              {event.list.map((list, i) => (
+                                <div key={i}>
+                                  {list.title && <p className="font-bold text-primary mb-2">{list.title[language]}:</p>}
+                                  <ul className="list-disc list-inside text-sm space-y-1">
+                                    {list.items.map((item, j) => (
+                                      <li key={j}>{item[language]}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Handle lists without details (like Session 1 topics) */}
+                      {!event.details && event.list && (
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 text-foreground/90 text-sm ${language === 'ml' ? 'font-anek' : ''}`}>
+                          {event.list.map((list, i) => (
+                            <div key={i}>
+                              {list.title && <p className="font-bold text-primary mb-2">{list.title[language]}:</p>}
+                              <ol className="list-decimal list-inside space-y-1">
+                                {list.items.map((item, j) => (
+                                  <li key={j}>{item[language]}</li>
+                                ))}
+                              </ol>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+
+            {/* Download Brochure */}
+            {/* Download Brochure - Removed from Bottom */}\
+
           </div>
         </section>
 
         {/* Guests Section */}
         <section id="guests" className="py-20 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">Distinguished Guests</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">{t.guests.title}</h2>
             {guests.length === 0 ? (
-              <p className="text-center text-foreground/60">Guest information coming soon...</p>
+              <p className="text-center text-foreground/60">{t.guests.comingSoon}</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {guests.map((guest, index) => (
@@ -431,40 +557,67 @@ export default function Home() {
         {/* Location Section */}
         <section id="location" lang="ml" className="py-20 bg-primary/5 ml">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">Location & Route</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">{t.location.title}</h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-              {/* Route Text (Malayalam) */}
+              {/* Route Text */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 className="font-noto space-y-6 text-lg text-foreground/90 bg-background p-8 rounded-2xl shadow-sm border border-primary/10"
               >
-                <h3 className="text-2xl font-bold text-accent mb-4">എങ്ങനെ എത്തിച്ചേരാം?</h3>
+                <h3 className="text-2xl font-bold text-accent mb-4">{t.location.howToReach}</h3>
 
                 <div>
-                  <h4 className="font-bold text-primary">കോഴിക്കോട് ഭാഗത്തു നിന്ന് വരുന്നവർ:</h4>
-                  <p>കോഴിക്കോട് -&gt; എടവണ്ണപ്പാറ -&gt; വിളയിൽ ഭാഗത്തേക്കുള്ള ബസ് കയറി കോട്ടമ്മൽ ഇറങ്ങുക. അവിടെ നിന്ന് സ്ഥാപനത്തിലേക്ക് 500 മീറ്റർ.</p>
+                  <h4 className="font-bold text-primary">{t.location.fromKozhikode.title}</h4>
+                  <p>{t.location.fromKozhikode.desc}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-primary">അരീക്കോട് ഭാഗത്തു നിന്ന് വരുന്നവർ:</h4>
-                  <p>അരീക്കോട് -&gt; കൊണ്ടോട്ടി ബസിൽ കയറി ഹാജിയാർ പടി ഇറങ്ങുക. അവിടെ നിന്ന് ഓട്ടോ മാർഗം സ്ഥാപനത്തിൽ എത്താം.</p>
+                  <h4 className="font-bold text-primary">{t.location.fromAreekode.title}</h4>
+                  <p>{t.location.fromAreekode.desc}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-primary">മഞ്ചേരി ഭാഗത്തു നിന്ന് വരുന്നവർ:</h4>
-                  <p>മഞ്ചേരി -&gt; കിഴിശേരി -&gt; അരീക്കോട് ബസ് കയറി ഹാജിയാർ പടി ഇറങ്ങി ഓട്ടോ മാർഗം സ്ഥാപനത്തിൽ എത്താം.</p>
+                  <h4 className="font-bold text-primary">{t.location.fromManjeri.title}</h4>
+                  <p>{t.location.fromManjeri.desc}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-primary">മലപ്പുറം ഭാഗത്തു നിന്ന് വരുന്നവർ:</h4>
-                  <p>മലപ്പുറം -&gt; കൊണ്ടോട്ടി -&gt; വിളയിൽ മാർഗം പോകുന്ന എടവണ്ണപ്പാറ ബസിൽ കയറി വിളയിൽ ഇറങ്ങുക. അവിടെ നിന്ന് സ്ഥാപനത്തിലേക്ക് 500 മീറ്റർ.</p>
+                  <h4 className="font-bold text-primary">{t.location.fromMalappuram.title}</h4>
+                  <p>{t.location.fromMalappuram.desc}</p>
                 </div>
 
                 <div className="text-sm bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <span className="font-bold">NB:</span> കൊണ്ടോട്ടിയിൽ നിന്ന് വിളയിൽ ഭാഗത്തേക്ക് അപൂർവം സമയങ്ങളിലാണ് ബസ് ഉള്ളത്. ഇല്ലാത്ത സാഹചര്യത്തിൽ കൊണ്ടോട്ടിയിൽ നിന്ന് അരീക്കോട് ബസിൽ കയറി ഹാജിയർപാടി ഇറങ്ങുകയും അവിടെ നിന്ന് ഓട്ടോ മാർഗം സ്ഥാപനത്തിൽ എത്താവുന്നതുമാണ്.
+                  <span className="font-bold">NB:</span> {t.location.note}
+                </div>
+
+                {/* Bus Timings */}
+                <div className="mt-6 pt-6 border-t border-primary/10">
+                  <h4 className="font-bold text-primary mb-2">{t.location.busTimings.kondotty}</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
+                    <span>1:35 PM</span>
+                    <span>2:50 PM</span>
+                    <span>3:15 PM</span>
+                    <span>3:55 PM</span>
+                    <span>4:50 PM</span>
+                    <span>5:50 PM</span>
+                    <span>6:05 PM</span>
+                    <span>6:55 PM</span>
+                  </div>
+
+                  <h4 className="font-bold text-primary mb-2">{t.location.busTimings.edavannappara}</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                    <span>1:25 PM</span>
+                    <span>2:10 PM</span>
+                    <span>2:45 PM</span>
+                    <span>3:55 PM</span>
+                    <span>4:15 PM</span>
+                    <span>4:35 PM</span>
+                    <span>4:55 PM</span>
+                    <span>5:45 PM</span>
+                  </div>
                 </div>
               </motion.div>
 
@@ -507,28 +660,77 @@ export default function Home() {
         {/* Gallery Section */}
         <section id="gallery" className="py-20 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">Gallery</h2>
-            {galleryItems.length === 0 ? (
-              <p className="text-center text-foreground/60">Photos and videos coming soon...</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-8">{t.gallery.title}</h2>
+
+            {/* Gallery Controls */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+              <div className="flex space-x-2 bg-secondary/10 p-1 rounded-lg">
+                {['all', 'photo', 'video'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab ? 'bg-primary text-white shadow-sm' : 'text-foreground/70 hover:text-primary'}`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}s
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-foreground/70">Sort by:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-secondary/10 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="likes">Most Likes</option>
+                </select>
+              </div>
+            </div>
+
+            {filteredGallery.length === 0 ? (
+              <p className="text-center text-foreground/60">{t.gallery.comingSoon}</p>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {galleryItems.map((item) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {filteredGallery.map((item) => (
                   <motion.div
                     key={item.id}
+                    layout
                     initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5 }}
-                    className="aspect-video bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden relative group"
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-background rounded-xl overflow-hidden shadow-sm border border-primary/10 group"
                   >
-                    {item.media_type === 'photo' ? (
-                      <img src={item.media_url} alt={item.title || 'Gallery'} className="w-full h-full object-cover" />
-                    ) : (
-                      <video src={item.media_url} controls className="w-full h-full object-cover" />
-                    )}
+                    <div className="aspect-video relative overflow-hidden">
+                      {item.media_type === 'photo' ? (
+                        <img src={item.media_url} alt={item.title || 'Gallery'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      ) : (
+                        <video src={item.media_url} controls className="w-full h-full object-cover" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
+                        <button
+                          onClick={() => handleLike(item.id, item.likes || 0)}
+                          className="text-white hover:text-accent transition-colors flex items-center gap-1"
+                        >
+                          <FiHeart className={`text-xl ${item.likes ? 'fill-accent text-accent' : ''}`} />
+                          <span className="text-sm font-bold">{item.likes || 0}</span>
+                        </button>
+                        <a
+                          href={item.media_url}
+                          download
+                          className="text-white hover:text-secondary transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FiDownload className="text-xl" />
+                        </a>
+                      </div>
+                    </div>
                     {item.title && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-sm">
-                        {item.title}
+                      <div className="p-3">
+                        <p className="text-sm font-medium text-foreground">{item.title}</p>
                       </div>
                     )}
                   </motion.div>

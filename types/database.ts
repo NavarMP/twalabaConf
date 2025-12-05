@@ -24,6 +24,7 @@ export type GalleryItem = {
     title: string | null
     media_url: string
     media_type: 'photo' | 'video'
+    likes: number
     display_order: number
     created_at: string
 }
@@ -43,7 +44,7 @@ export type Database = {
             }
             gallery: {
                 Row: GalleryItem
-                Insert: Omit<GalleryItem, 'id' | 'created_at'>
+                Insert: Omit<GalleryItem, 'id' | 'created_at' | 'likes'>
                 Update: Partial<Omit<GalleryItem, 'id' | 'created_at'>>
             }
         }
