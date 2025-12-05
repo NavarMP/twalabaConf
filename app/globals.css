@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Malayalam&display=swap');
+
 @font-face {
   font-family: 'Cooper Black';
   src: url('/assets/COOPBL.TTF') format('truetype');
@@ -28,6 +30,7 @@
   --primary: #1f3661;
   --secondary: #05cda9;
   --accent: #fa6044;
+  --font-noto-serif-malayalam: 'Noto Serif Malayalam', serif;
 }
 
 .dark {
@@ -47,4 +50,13 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-poppins), sans-serif;
+}
+
+/* Apply Noto Serif Malayalam for Malayalam text
+   - elements with HTML lang="ml"
+   - elements with attribute [lang="ml"]
+   - elements with class .ml (useful when lang attribute isn't present)
+*/
+:lang(ml), [lang="ml"], .ml {
+  font-family: var(--font-noto-serif-malayalam);
 }
