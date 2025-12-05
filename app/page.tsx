@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+// import AIAssistant from "@/components/AIAssistant";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiDownload, FiMapPin, FiCalendar, FiHeart, FiX } from "react-icons/fi";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +43,9 @@ export default function Home() {
   const [scheduleLang, setScheduleLang] = useState<'en' | 'ml'>('ml');
   const [locationLang, setLocationLang] = useState<'en' | 'ml'>('ml');
 
+  const [sessionTitle, setSessionTitle] = useState<string>('');
+  const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: guestsData } = await supabase
@@ -62,10 +66,20 @@ export default function Home() {
       const { data: settingsData } = await supabase
         .from('settings')
         .select('*')
-        .eq('key', 'live_streaming_url')
-        .single();
-      if (settingsData && settingsData.value) {
-        setLiveUrl(settingsData.value);
+        .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions']);
+
+      if (settingsData) {
+        settingsData.forEach(item => {
+          if (item.key === 'live_streaming_url') setLiveUrl(item.value);
+          if (item.key === 'current_session_title') setSessionTitle(item.value);
+          if (item.key === 'previous_sessions') {
+            try {
+              setPreviousSessions(JSON.parse(item.value));
+            } catch (e) {
+              setPreviousSessions([]);
+            }
+          }
+        });
       }
     };
     fetchData();
@@ -164,22 +178,55 @@ export default function Home() {
                 {t.hero.viewSchedule}
               </a>
               {liveUrl && (
-                <a
-                  href={liveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25"
-                >
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                  </span>
-                  Live Streaming
-                </a>
+                <div className="flex flex-col items-center gap-4">
+                  <a
+                    href={liveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25"
+                  >
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </span>
+                    Live Streaming
+                  </a>
+
+                  {/* Current Session Info */}
+                  <div className="bg-background/80 backdrop-blur-md p-4 rounded-xl border border-white/10 text-center max-w-sm">
+                    <p className="text-xs text-primary font-bold uppercase tracking-widest mb-1">Currently Streaming</p>
+                    <h3 className="text-lg font-bold text-foreground">{sessionTitle || 'Live Session'}</h3>
+
+                    {/* Previous Sessions Dropdown */}
+                    {previousSessions.length > 0 && (
+                      <div className="mt-3 relative group">
+                        <button className="text-sm text-foreground/70 hover:text-primary flex items-center justify-center gap-1 mx-auto transition-colors">
+                          Previous Sessions
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                          {previousSessions.map((session, idx) => (
+                            <a
+                              key={idx}
+                              href={session.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 hover:text-primary text-left border-b border-white/5 last:border-0"
+                            >
+                              {session.title}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </motion.div>
           </motion.div>
         </section>
+
+        {/* <AIAssistant /> */}
 
         {/* About Section */}
         <section id="about" className="py-20 bg-background">
@@ -333,41 +380,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Guests Section */}
-        <section id="guests" className="py-20 bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">{t.guests.title}</h2>
-            {guests.length === 0 ? (
-              <p className="text-center text-foreground/60">{t.guests.comingSoon}</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {guests.map((guest, index) => (
-                  <motion.div
-                    key={guest.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="bg-secondary/10 rounded-xl p-6 text-center hover:shadow-xl transition-shadow border border-secondary/20"
-                  >
-                    <div className="w-32 h-32 bg-gray-300 rounded-full mx-auto mb-4 overflow-hidden relative">
-                      {guest.image_url ? (
-                        <img src={guest.image_url} alt={guest.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-2xl font-bold">
-                          {guest.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground">{guest.name}</h3>
-                    <p className="text-sm text-primary">{guest.title}</p>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
         {/* Location Section */}
         <section id="location" lang={locationLang} className={`py-20 bg-primary/5 ${locationLang === 'ml' ? 'ml' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -488,6 +500,41 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Guests Section */}
+        <section id="guests" className="py-20 bg-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">{t.guests.title}</h2>
+            {guests.length === 0 ? (
+              <p className="text-center text-foreground/60">{t.guests.comingSoon}</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {guests.map((guest, index) => (
+                  <motion.div
+                    key={guest.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="bg-secondary/10 rounded-xl p-6 text-center hover:shadow-xl transition-shadow border border-secondary/20"
+                  >
+                    <div className="w-32 h-32 bg-gray-300 rounded-full mx-auto mb-4 overflow-hidden relative">
+                      {guest.image_url ? (
+                        <img src={guest.image_url} alt={guest.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-2xl font-bold">
+                          {guest.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground">{guest.name}</h3>
+                    <p className="text-sm text-primary">{guest.title}</p>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Gallery Section */}
         <section id="gallery" className="py-20 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -545,6 +592,16 @@ export default function Home() {
                             alt={item.title || 'Gallery'}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
+                        ) : item.media_type === 'embed' ? (
+                          <div className="w-full h-full relative group-hover:opacity-90 transition-opacity">
+                            <iframe
+                              src={item.media_url}
+                              className="w-full h-full pointer-events-none"
+                              title={item.title || 'Embed'}
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-transparent"></div> {/* Overlay to capture click */}
+                          </div>
                         ) : (
                           <div className="w-full h-full relative">
                             <video src={item.media_url} className="w-full h-full object-cover" />
@@ -604,8 +661,8 @@ export default function Home() {
                           key={page}
                           onClick={() => setCurrentPage(page)}
                           className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold transition-colors ${currentPage === page
-                              ? 'bg-primary text-white'
-                              : 'bg-transparent text-foreground/70 hover:bg-primary/5'
+                            ? 'bg-primary text-white'
+                            : 'bg-transparent text-foreground/70 hover:bg-primary/5'
                             }`}
                         >
                           {page}
@@ -658,15 +715,25 @@ export default function Home() {
                 {selectedItem.media_type === 'photo' ? (
                   <img
                     src={selectedItem.media_url}
-                    alt={selectedItem.title || 'Gallery'}
-                    className="max-w-full max-h-[85vh] object-contain"
+                    alt={selectedItem.title || 'Gallery preview'}
+                    className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
                   />
+                ) : selectedItem.media_type === 'embed' ? (
+                  <div className="w-full aspect-video rounded-lg overflow-hidden">
+                    <iframe
+                      src={selectedItem.media_url}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={selectedItem.title || 'Embed'}
+                    />
+                  </div>
                 ) : (
                   <video
                     src={selectedItem.media_url}
                     controls
                     autoPlay
-                    className="max-w-full max-h-[85vh]"
+                    className="w-full h-auto max-h-[80vh] rounded-lg"
                   />
                 )}
               </div>
@@ -689,6 +756,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div >
   );
 }

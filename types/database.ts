@@ -23,7 +23,7 @@ export type GalleryItem = {
     id: string
     title: string | null
     media_url: string
-    media_type: 'photo' | 'video'
+    media_type: 'photo' | 'video' | 'embed'
     likes: number
     display_order: number
     created_at: string
