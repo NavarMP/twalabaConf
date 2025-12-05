@@ -130,7 +130,7 @@ export default function Home() {
         </section>
 
         {/* Schedule Section */}
-        <section id="schedule" className="py-20 bg-secondary/5">
+        <section id="schedule" lang="ml" className="py-20 bg-secondary/5 ml">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -429,7 +429,7 @@ export default function Home() {
         </section>
 
         {/* Location Section */}
-        <section id="location" className="py-20 bg-primary/5">
+        <section id="location" lang="ml" className="py-20 bg-primary/5 ml">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">Location & Route</h2>
 
