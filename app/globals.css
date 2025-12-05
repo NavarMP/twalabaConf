@@ -60,3 +60,11 @@ body {
 :lang(ml), [lang="ml"], .ml {
   font-family: var(--font-noto-serif-malayalam);
 }
+
+/* Stronger rule to override component-level font-family declarations
+   Applies the Malayalam font to all descendants when language/class is set
+*/
+:lang(ml) , [lang="ml"] , .ml,
+:lang(ml) * , [lang="ml"] * , .ml * {
+  font-family: var(--font-noto-serif-malayalam) !important;
+}
