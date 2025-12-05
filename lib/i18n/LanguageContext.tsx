@@ -19,20 +19,30 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         setMounted(true);
         // Check local storage or browser preference
         const savedLang = localStorage.getItem('language') as Language;
+        let activeLang: Language = 'en';
+
         if (savedLang && (savedLang === 'en' || savedLang === 'ml')) {
-            setLanguage(savedLang);
+            activeLang = savedLang;
         } else {
             // Default to Malayalam if browser language is Malayalam, else English
             const browserLang = navigator.language;
             if (browserLang.startsWith('ml')) {
-                setLanguage('ml');
+                activeLang = 'ml';
             }
         }
+        setLanguage(activeLang);
+        document.documentElement.lang = activeLang;
     }, []);
+
+    useEffect(() => {
+        if (mounted) {
+            document.documentElement.lang = language;
+            localStorage.setItem('language', language);
+        }
+    }, [language, mounted]);
 
     const handleSetLanguage = (lang: Language) => {
         setLanguage(lang);
-        localStorage.setItem('language', lang);
     };
 
     const value = {

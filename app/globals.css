@@ -50,18 +50,9 @@ body {
 }
 
 /* Apply Noto Serif Malayalam for Malayalam text */
+/* Apply Noto Serif Malayalam for Malayalam text */
 :lang(ml),
 [lang="ml"],
 .ml {
-  font-family: var(--font-noto-serif-malayalam);
-}
-
-/* Stronger rule to override component-level font-family declarations */
-:lang(ml),
-[lang="ml"],
-.ml,
-:lang(ml) *,
-[lang="ml"] *,
-.ml * {
   font-family: var(--font-noto-serif-malayalam) !important;
 }
