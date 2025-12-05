@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { FiUsers, FiCalendar, FiImage, FiLogOut, FiHome } from 'react-icons/fi'
+import { FiUsers, FiCalendar, FiImage, FiLogOut, FiHome, FiSettings } from 'react-icons/fi'
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
@@ -41,6 +41,7 @@ export default function AdminDashboard() {
         { href: '/admin/guests', icon: FiUsers, label: 'Guests', description: 'Manage distinguished guests' },
         { href: '/admin/schedule', icon: FiCalendar, label: 'Schedule', description: 'Edit program schedule' },
         { href: '/admin/gallery', icon: FiImage, label: 'Gallery', description: 'Manage photos & videos' },
+        { href: '/admin/settings', icon: FiSettings, label: 'Settings', description: 'Manage site settings' },
     ]
 
     return (

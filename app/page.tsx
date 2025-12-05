@@ -32,6 +32,7 @@ export default function Home() {
   const [filteredGallery, setFilteredGallery] = useState<GalleryItem[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'photo' | 'video'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const supabase = createClient();
   const { t, language } = useLanguage();
   const [scheduleLang, setScheduleLang] = useState<'en' | 'ml'>('ml');
@@ -52,6 +53,15 @@ export default function Home() {
       if (galleryData) {
         setGalleryItems(galleryData);
         setFilteredGallery(galleryData);
+      }
+
+      const { data: settingsData } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('key', 'live_streaming_url')
+        .single();
+      if (settingsData && settingsData.value) {
+        setLiveUrl(settingsData.value);
       }
     };
     fetchData();
@@ -148,18 +158,20 @@ export default function Home() {
               >
                 {t.hero.viewSchedule}
               </a>
-              <a
-                href="https://www.youtube.com/live/Z8LfFbwFIvY?si=VX44IgyUPW9V1LsP"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25"
-              >
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                </span>
-                Live Streaming
-              </a>
+              {liveUrl && (
+                <a
+                  href={liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25"
+                >
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                  </span>
+                  Live Streaming
+                </a>
+              )}
             </motion.div>
           </motion.div>
         </section>

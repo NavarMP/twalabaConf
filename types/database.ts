@@ -47,6 +47,23 @@ export type Database = {
                 Insert: Omit<GalleryItem, 'id' | 'created_at' | 'likes'>
                 Update: Partial<Omit<GalleryItem, 'id' | 'created_at'>>
             }
+            settings: {
+                Row: {
+                    key: string
+                    value: string
+                    description: string | null
+                }
+                Insert: {
+                    key: string
+                    value: string
+                    description?: string | null
+                }
+                Update: Partial<{
+                    key: string
+                    value: string
+                    description: string | null
+                }>
+            }
         }
     }
 }
