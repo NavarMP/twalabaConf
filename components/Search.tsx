@@ -26,6 +26,7 @@ export default function Search({ isOpen, onClose, guests, galleryItems }: Search
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<SearchResult[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
     const { language, t } = useLanguage();
 
     useEffect(() => {
@@ -142,7 +143,10 @@ export default function Search({ isOpen, onClose, guests, galleryItems }: Search
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
                 >
-                    <div className="w-full max-w-2xl bg-secondary/10 rounded-2xl shadow-2xl border border-primary/20 overflow-hidden flex flex-col max-h-[80vh]">
+                    <div
+                        ref={searchContainerRef} // Added ref here
+                        className="w-full max-w-2xl bg-secondary/10 rounded-2xl shadow-2xl border border-primary/20 overflow-hidden flex flex-col max-h-[80vh]"
+                    >
                         <div className="p-4 flex items-center gap-4 border-b border-primary/10">
                             <FiSearch className="text-2xl text-primary" />
                             <input

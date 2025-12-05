@@ -9,6 +9,7 @@ export default function SettingsManagement() {
     const [liveUrl, setLiveUrl] = useState('')
     const [sessionTitle, setSessionTitle] = useState('')
     const [nextSessionDetails, setNextSessionDetails] = useState('')
+    const [upcomingStreamUrl, setUpcomingStreamUrl] = useState('')
     const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -23,13 +24,14 @@ export default function SettingsManagement() {
         const { data } = await supabase
             .from('settings')
             .select('*')
-            .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details'])
+            .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details', 'upcoming_stream_url'])
 
         if (data) {
             data.forEach(item => {
                 if (item.key === 'live_streaming_url') setLiveUrl(item.value)
                 if (item.key === 'current_session_title') setSessionTitle(item.value)
                 if (item.key === 'next_session_details') setNextSessionDetails(item.value)
+                if (item.key === 'upcoming_stream_url') setUpcomingStreamUrl(item.value)
                 if (item.key === 'previous_sessions') {
                     try {
                         setPreviousSessions(JSON.parse(item.value))
@@ -50,6 +52,7 @@ export default function SettingsManagement() {
             { key: 'live_streaming_url', value: liveUrl, description: 'URL for the live streaming button' },
             { key: 'current_session_title', value: sessionTitle, description: 'Title of the current session' },
             { key: 'next_session_details', value: nextSessionDetails, description: 'Details about the upcoming session' },
+            { key: 'upcoming_stream_url', value: upcomingStreamUrl, description: 'URL for the upcoming scheduled stream' },
             { key: 'previous_sessions', value: JSON.stringify(previousSessions), description: 'List of previous sessions' }
         ]
 
@@ -149,6 +152,22 @@ export default function SettingsManagement() {
                             />
                             <p className="text-xs text-foreground/50 mt-2">
                                 Leave empty to hide the &quot;Live Streaming&quot; button on the homepage.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2 opacity-80">
+                                Upcoming Stream Link (Optional)
+                            </label>
+                            <input
+                                type="url"
+                                placeholder="https://youtube.com/live/..."
+                                value={upcomingStreamUrl}
+                                onChange={(e) => setUpcomingStreamUrl(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                            />
+                            <p className="text-xs text-foreground/50 mt-2">
+                                If provided, this link will be shown with the "Next Session" details.
                             </p>
                         </div>
 

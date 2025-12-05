@@ -45,20 +45,16 @@ export default function Home() {
 
   const [currentSessionTitle, setCurrentSessionTitle] = useState<string | null>(null);
   const [nextSessionDetails, setNextSessionDetails] = useState<string | null>(null);
+  const [upcomingStreamUrl, setUpcomingStreamUrl] = useState<string | null>(null);
   const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: guestsData } = await supabase
-        .from('guests')
-        .select('*')
-        .order('display_order', { ascending: true });
+      // ... (guests and gallery fetch omitted for brevity in diff, but kept in file) ...
+      const { data: guestsData } = await supabase.from('guests').select('*').order('display_order', { ascending: true });
       if (guestsData) setGuests(guestsData);
 
-      const { data: galleryData } = await supabase
-        .from('gallery')
-        .select('*')
-        .order('display_order', { ascending: true });
+      const { data: galleryData } = await supabase.from('gallery').select('*').order('display_order', { ascending: true });
       if (galleryData) {
         setGalleryItems(galleryData);
         setFilteredGallery(galleryData);
@@ -67,13 +63,14 @@ export default function Home() {
       const { data: settingsData } = await supabase
         .from('settings')
         .select('*')
-        .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details']);
+        .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details', 'upcoming_stream_url']);
 
       if (settingsData) {
         settingsData.forEach(item => {
           if (item.key === 'live_streaming_url') setLiveUrl(item.value);
           if (item.key === 'current_session_title') setCurrentSessionTitle(item.value);
           if (item.key === 'next_session_details') setNextSessionDetails(item.value);
+          if (item.key === 'upcoming_stream_url') setUpcomingStreamUrl(item.value);
           if (item.key === 'previous_sessions') {
             try {
               setPreviousSessions(JSON.parse(item.value));
@@ -180,7 +177,8 @@ export default function Home() {
               >
                 {t.hero.viewSchedule}
               </a>
-              {liveUrl && (
+              {liveUrl ? (
+                // STATE 1: LIVE HAPPENING
                 <div className="flex flex-col items-center gap-4">
                   <a
                     href={liveUrl}
@@ -223,6 +221,79 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+                </div>
+              ) : (nextSessionDetails || upcomingStreamUrl) ? (
+                // STATE 2: UPCOMING SESSION
+                <div className="flex flex-col items-center gap-4">
+                  <div className="bg-background/80 backdrop-blur-md p-6 rounded-2xl border border-primary/20 text-center max-w-md shadow-xl">
+                    <p className="text-xs text-primary font-bold uppercase tracking-widest mb-2">Next Session</p>
+                    {nextSessionDetails && <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">{nextSessionDetails}</h3>}
+
+                    {upcomingStreamUrl ? (
+                      <a
+                        href={upcomingStreamUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-secondary text-white px-6 py-3 rounded-lg font-bold hover:bg-secondary/90 transition-all shadow-lg"
+                      >
+                        <FiCalendar className="w-5 h-5" />
+                        Notify Me / Watch Later
+                      </a>
+                    ) : (
+                      <div className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium">
+                        Stay Tuned
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reuse Previous Sessions Dropdown if exists */}
+                  {previousSessions.length > 0 && (
+                    <div className="relative group">
+                      <button className="text-sm text-white/80 hover:text-white flex items-center justify-center gap-1 mx-auto transition-colors bg-white/10 px-4 py-2 rounded-full">
+                        Watch Previous Sessions
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                        {previousSessions.map((session, idx) => (
+                          <a
+                            key={idx}
+                            href={session.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 hover:text-primary text-left border-b border-white/5 last:border-0"
+                          >
+                            {session.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // STATE 3: NO ACTIVE OR UPCOMING (End of Conference or Offline)
+                <div className="text-center text-white/50">
+                  <p>Conference updates will appear here.</p>
+                  {previousSessions.length > 0 && (
+                    <div className="mt-4 relative group inline-block">
+                      <button className="text-sm text-white/80 hover:text-white flex items-center justify-center gap-1 mx-auto transition-colors bg-white/10 px-4 py-2 rounded-full">
+                        Access Previous Sessions Archive
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                        {previousSessions.map((session, idx) => (
+                          <a
+                            key={idx}
+                            href={session.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 hover:text-primary text-left border-b border-white/5 last:border-0"
+                          >
+                            {session.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

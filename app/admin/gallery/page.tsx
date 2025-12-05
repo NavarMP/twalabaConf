@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { GalleryItem } from '@/types/database'
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiImage, FiVideo } from 'react-icons/fi'
+import imageCompression from 'browser-image-compression';
 
 export default function GalleryManagement() {
     const [items, setItems] = useState<GalleryItem[]>([])
@@ -38,7 +39,7 @@ export default function GalleryManagement() {
         fetchItems()
     }, [])
 
-    const [uploadQueue, setUploadQueue] = useState<{ file: File, progress: number, status: 'pending' | 'uploading' | 'done' | 'error', type: string }[]>([])
+    const [uploadQueue, setUploadQueue] = useState<{ file: File, progress: number, status: 'pending' | 'compressing' | 'uploading' | 'done' | 'error', type: string }[]>([])
 
     // ... items fetching ...
 
@@ -99,22 +100,38 @@ export default function GalleryManagement() {
         }));
         setUploadQueue(prev => [...prev, ...newQueue]);
 
-        // Process uploads one by one (to manage order correctly and not overwhelm server)
+        // Process uploads one by one
         for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+            let fileToUpload = files[i];
             const startOrder = currentOrder + i;
 
+            // Compress if image
+            if (fileToUpload.type.startsWith('image/')) {
+                setUploadQueue(prev => prev.map(item => item.file === files[i] ? { ...item, status: 'compressing' as any } : item)); // Add 'compressing' status to type locally if needed or just use 'uploading' with text change
+                try {
+                    const options = {
+                        maxSizeMB: 1,
+                        maxWidthOrHeight: 1920,
+                        useWebWorker: true
+                    }
+                    fileToUpload = await imageCompression(fileToUpload, options);
+                } catch (error) {
+                    console.error('Compression failed:', error);
+                    // Fallback to original file
+                }
+            }
+
             // Update status to uploading
-            setUploadQueue(prev => prev.map(item => item.file === file ? { ...item, status: 'uploading' } : item));
+            setUploadQueue(prev => prev.map(item => item.file === files[i] ? { ...item, status: 'uploading' } : item));
 
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileToUpload);
 
             try {
-                // Simulate progress (since fetch doesn't support it natively easily without XHR)
+                // Simulate progress
                 const progressInterval = setInterval(() => {
                     setUploadQueue(prev => prev.map(item =>
-                        (item.file === file && item.progress < 90) ? { ...item, progress: item.progress + 10 } : item
+                        (item.file === files[i] && item.progress < 90) ? { ...item, progress: item.progress + 10 } : item
                     ));
                 }, 100);
 
@@ -129,24 +146,24 @@ export default function GalleryManagement() {
                 if (data.success) {
                     // Create DB Entry
                     const { error } = await supabase.from('gallery').insert([{
-                        title: file.name.split('.')[0], // Default title from filename
+                        title: files[i].name.split('.')[0], // Original filename for title
                         media_url: data.url,
-                        media_type: file.type.startsWith('image/') ? 'photo' : 'video',
+                        media_type: fileToUpload.type.startsWith('image/') ? 'photo' : 'video',
                         display_order: startOrder
                     }]);
 
                     if (!error) {
-                        setUploadQueue(prev => prev.map(item => item.file === file ? { ...item, progress: 100, status: 'done' } : item));
+                        setUploadQueue(prev => prev.map(item => item.file === files[i] ? { ...item, progress: 100, status: 'done' } : item));
                         fetchItems(); // Refresh gallery
                     } else {
-                        setUploadQueue(prev => prev.map(item => item.file === file ? { ...item, status: 'error' } : item));
+                        setUploadQueue(prev => prev.map(item => item.file === files[i] ? { ...item, status: 'error' } : item));
                     }
                 } else {
-                    setUploadQueue(prev => prev.map(item => item.file === file ? { ...item, status: 'error' } : item));
+                    setUploadQueue(prev => prev.map(item => item.file === files[i] ? { ...item, status: 'error' } : item));
                 }
             } catch (error) {
                 console.error(error);
-                setUploadQueue(prev => prev.map(item => item.file === file ? { ...item, status: 'error' } : item));
+                setUploadQueue(prev => prev.map(item => item.file === files[i] ? { ...item, status: 'error' } : item));
             }
         }
 
@@ -358,7 +375,12 @@ export default function GalleryManagement() {
                                             />
                                         </div>
                                     </div>
-                                    <div className="text-xs font-bold w-10 text-right">{file.status === 'done' ? '✓' : `${file.progress}%`}</div>
+                                    <div className="text-xs font-bold w-20 text-right">
+                                        {file.status === 'done' ? '✓' :
+                                            file.status === 'compressing' ? 'Compressing...' :
+                                                file.status === 'error' ? 'Error' :
+                                                    `${file.progress}%`}
+                                    </div>
                                 </div>
                             ))}
                         </div>
