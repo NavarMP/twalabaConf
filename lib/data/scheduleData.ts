@@ -72,7 +72,7 @@ export const scheduleData: DaySchedule[] = [
                 ]
             },
             {
-                time: "7.00 - 9.00 AM",
+                time: "7.00 - 9.00 PM",
                 title: { en: "SESSION 01", ml: "SESSION 01" },
                 subtitle: { en: "Muthallimiyam Tradition", ml: "മുതഅല്ലിമീയം ട്രഡീഷൻ" },
                 type: "session",
@@ -93,7 +93,7 @@ export const scheduleData: DaySchedule[] = [
                 ]
             },
             {
-                time: "9.30 - 10.30 AM",
+                time: "9.30 - 10.30 PM",
                 title: { en: "SESSION 02", ml: "SESSION 02" },
                 subtitle: { en: "Rasooliyam Folklore", ml: "റസൂലിയം ഫോക്ലോർ" },
                 type: "session",
