@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         await writeFile(filepath, buffer);
 
         return NextResponse.json({
-            url: `/assets/photos/${filename}`,
+            url: `/api/media/${filename}`,
             success: true
         });
 
