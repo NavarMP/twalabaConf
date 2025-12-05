@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { motion } from "framer-motion";
-import { FiDownload, FiMapPin, FiCalendar, FiHeart } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiDownload, FiMapPin, FiCalendar, FiHeart, FiX } from "react-icons/fi";
 import { createClient } from "@/lib/supabase/client";
 import { Guest, GalleryItem } from "@/types/database";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -33,6 +33,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'all' | 'photo' | 'video'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const supabase = createClient();
   const { t, language } = useLanguage();
   const [scheduleLang, setScheduleLang] = useState<'en' | 'ml'>('ml');
@@ -531,13 +532,28 @@ export default function Home() {
                   >
                     <div className="aspect-video relative overflow-hidden">
                       {item.media_type === 'photo' ? (
-                        <img src={item.media_url} alt={item.title || 'Gallery'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        <img
+                          src={item.media_url}
+                          alt={item.title || 'Gallery'}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
+                          onClick={() => setSelectedItem(item)}
+                        />
                       ) : (
-                        <video src={item.media_url} controls className="w-full h-full object-cover" />
+                        <div className="w-full h-full relative cursor-pointer" onClick={() => setSelectedItem(item)}>
+                          <video src={item.media_url} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                            <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[16px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                            </div>
+                          </div>
+                        </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
                         <button
-                          onClick={() => handleLike(item.id, item.likes || 0)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike(item.id, item.likes || 0);
+                          }}
                           className="text-white hover:text-accent transition-colors flex items-center gap-1"
                         >
                           <FiHeart className={`text-xl ${item.likes ? 'fill-accent text-accent' : ''}`} />
@@ -546,6 +562,7 @@ export default function Home() {
                         <a
                           href={item.media_url}
                           download
+                          onClick={(e) => e.stopPropagation()}
                           className="text-white hover:text-secondary transition-colors"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -568,6 +585,66 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      {/* Gallery Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+            onClick={() => setSelectedItem(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden bg-black shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-colors backdrop-blur-md"
+              >
+                <FiX className="w-6 h-6" />
+              </button>
+
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                {selectedItem.media_type === 'photo' ? (
+                  <img
+                    src={selectedItem.media_url}
+                    alt={selectedItem.title || 'Gallery'}
+                    className="max-w-full max-h-[85vh] object-contain"
+                  />
+                ) : (
+                  <video
+                    src={selectedItem.media_url}
+                    controls
+                    autoPlay
+                    className="max-w-full max-h-[85vh]"
+                  />
+                )}
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between pointer-events-none">
+                <h3 className="text-white text-lg font-medium pl-2">{selectedItem.title}</h3>
+                <a
+                  href={selectedItem.media_url}
+                  download
+                  onClick={(e) => e.stopPropagation()}
+                  className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-full font-bold hover:bg-white/90 transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FiDownload className="w-5 h-5" />
+                  Download
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
