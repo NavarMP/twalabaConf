@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Anek_Malayalam, Noto_Serif_Malayalam } from "next/font/google";
+import { Poppins, Noto_Serif_Malayalam } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
@@ -7,12 +7,6 @@ import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const anekMalayalam = Anek_Malayalam({
-  variable: "--font-anek-malayalam",
-  subsets: ["malayalam"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
@@ -43,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} ${anekMalayalam.variable} ${notoSerifMalayalam.variable} antialiased`}
+        className={`${poppins.variable} ${notoSerifMalayalam.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
           <LanguageProvider>

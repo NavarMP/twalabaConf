@@ -9,6 +9,7 @@ import { FiDownload, FiMapPin, FiCalendar, FiHeart } from "react-icons/fi";
 import { createClient } from "@/lib/supabase/client";
 import { Guest, GalleryItem } from "@/types/database";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { translations } from "@/lib/i18n/translations";
 import { scheduleData } from "@/lib/data/scheduleData";
 
 const fadeInUp = {
@@ -33,6 +34,14 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
   const supabase = createClient();
   const { t, language } = useLanguage();
+  const [scheduleLang, setScheduleLang] = useState<'en' | 'ml'>('en');
+  const [locationLang, setLocationLang] = useState<'en' | 'ml'>('en');
+
+  // Sync with global language initially, but allow independent toggling
+  useEffect(() => {
+    setScheduleLang(language);
+    setLocationLang(language);
+  }, [language]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -167,8 +176,10 @@ export default function Home() {
           </div>
         </section>
 
+
+
         {/* Schedule Section */}
-        <section id="schedule" lang="ml" className="py-20 bg-secondary/5 ml">
+        <section id="schedule" lang={scheduleLang} className={`py-20 bg-secondary/5 ${scheduleLang === 'ml' ? 'ml' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -177,13 +188,29 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">{t.schedule.title}</h2>
+              <div className="flex justify-center items-center gap-4 mb-4">
+                <h2 className="text-3xl md:text-4xl font-bold text-primary">{t.schedule.title}</h2>
+                <div className="flex bg-primary/10 rounded-lg p-1">
+                  <button
+                    onClick={() => setScheduleLang('en')}
+                    className={`px-3 py-1 rounded-md text-sm font-bold transition-colors ${scheduleLang === 'en' ? 'bg-primary text-white' : 'text-primary hover:bg-primary/20'}`}
+                  >
+                    ENG
+                  </button>
+                  <button
+                    onClick={() => setScheduleLang('ml')}
+                    className={`px-3 py-1 rounded-md text-sm font-bold transition-colors ${scheduleLang === 'ml' ? 'bg-primary text-white' : 'text-primary hover:bg-primary/20'}`}
+                  >
+                    MAL
+                  </button>
+                </div>
+              </div>
               <p className="text-lg text-foreground/80">
                 {t.schedule.description}
               </p>
             </motion.div>
 
-            {/* Download Brochure - Moved to Top */}
+            {/* Download Brochure */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -210,7 +237,7 @@ export default function Home() {
                 className="mb-16"
               >
                 <div className="bg-primary text-white py-4 px-6 rounded-t-xl">
-                  <h3 className={`text-2xl font-bold ${language === 'ml' ? 'font-anek' : ''}`}>{day.date[language]}</h3>
+                  <h3 className={`text-2xl font-bold ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>{day.date[scheduleLang]}</h3>
                 </div>
                 <div className="bg-background border border-primary/20 rounded-b-xl overflow-hidden">
                   {day.events.map((event, eventIndex) => (
@@ -222,23 +249,23 @@ export default function Home() {
                         <span className={`px-3 py-1 rounded-full text-sm font-bold ${event.type === 'special' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
                           {event.time}
                         </span>
-                        <h4 className={`text-xl font-bold ${event.type === 'special' ? 'text-primary' : 'text-accent'} ${language === 'ml' ? 'font-anek' : ''}`}>
-                          {event.title[language]}
+                        <h4 className={`text-xl font-bold ${event.type === 'special' ? 'text-primary' : 'text-accent'} ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
+                          {event.title[scheduleLang]}
                         </h4>
                       </div>
 
                       {event.subtitle && (
-                        <h5 className={`text-lg font-bold text-primary mb-2 ${language === 'ml' ? 'font-anek' : ''}`}>
-                          {event.subtitle[language]}
+                        <h5 className={`text-lg font-bold text-primary mb-2 ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
+                          {event.subtitle[scheduleLang]}
                         </h5>
                       )}
 
                       {event.details && (
-                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 text-foreground/90 ${language === 'ml' ? 'font-anek' : ''}`}>
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 text-foreground/90 ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
                           <div>
                             {event.details.map((detail, i) => (
                               <p key={i} className="mb-2">
-                                <span className="font-bold text-primary">{detail.label[language]}:</span> {detail.content[language]}
+                                <span className="font-bold text-primary">{detail.label[scheduleLang]}:</span> {detail.content[scheduleLang]}
                               </p>
                             ))}
                           </div>
@@ -246,10 +273,10 @@ export default function Home() {
                             <div>
                               {event.list.map((list, i) => (
                                 <div key={i}>
-                                  {list.title && <p className="font-bold text-primary mb-2">{list.title[language]}:</p>}
+                                  {list.title && <p className="font-bold text-primary mb-2">{list.title[scheduleLang]}:</p>}
                                   <ul className="list-disc list-inside text-sm space-y-1">
                                     {list.items.map((item, j) => (
-                                      <li key={j}>{item[language]}</li>
+                                      <li key={j}>{item[scheduleLang]}</li>
                                     ))}
                                   </ul>
                                 </div>
@@ -261,13 +288,13 @@ export default function Home() {
 
                       {/* Handle lists without details (like Session 1 topics) */}
                       {!event.details && event.list && (
-                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 text-foreground/90 text-sm ${language === 'ml' ? 'font-anek' : ''}`}>
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 text-foreground/90 text-sm ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
                           {event.list.map((list, i) => (
                             <div key={i}>
-                              {list.title && <p className="font-bold text-primary mb-2">{list.title[language]}:</p>}
+                              {list.title && <p className="font-bold text-primary mb-2">{list.title[scheduleLang]}:</p>}
                               <ol className="list-decimal list-inside space-y-1">
                                 {list.items.map((item, j) => (
-                                  <li key={j}>{item[language]}</li>
+                                  <li key={j}>{item[scheduleLang]}</li>
                                 ))}
                               </ol>
                             </div>
@@ -279,9 +306,6 @@ export default function Home() {
                 </div>
               </motion.div>
             ))}
-
-            {/* Download Brochure */}
-            {/* Download Brochure - Removed from Bottom */}\
 
           </div>
         </section>
@@ -322,9 +346,25 @@ export default function Home() {
         </section>
 
         {/* Location Section */}
-        <section id="location" lang="ml" className="py-20 bg-primary/5 ml">
+        <section id="location" lang={locationLang} className={`py-20 bg-primary/5 ${locationLang === 'ml' ? 'ml' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-12">{t.location.title}</h2>
+            <div className="flex justify-center items-center gap-4 mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-primary text-center">{t.location.title}</h2>
+              <div className="flex bg-primary/10 rounded-lg p-1">
+                <button
+                  onClick={() => setLocationLang('en')}
+                  className={`px-3 py-1 rounded-md text-sm font-bold transition-colors ${locationLang === 'en' ? 'bg-primary text-white' : 'text-primary hover:bg-primary/20'}`}
+                >
+                  ENG
+                </button>
+                <button
+                  onClick={() => setLocationLang('ml')}
+                  className={`px-3 py-1 rounded-md text-sm font-bold transition-colors ${locationLang === 'ml' ? 'bg-primary text-white' : 'text-primary hover:bg-primary/20'}`}
+                >
+                  MAL
+                </button>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
               {/* Route Text */}
@@ -332,37 +372,37 @@ export default function Home() {
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                className="font-noto space-y-6 text-lg text-foreground/90 bg-background p-8 rounded-2xl shadow-sm border border-primary/10"
+                className={`space-y-6 text-lg text-foreground/90 bg-background p-8 rounded-2xl shadow-sm border border-primary/10 ${locationLang === 'ml' ? 'font-noto' : ''}`}
               >
-                <h3 className="text-2xl font-bold text-accent mb-4">{t.location.howToReach}</h3>
+                <h3 className="text-2xl font-bold text-accent mb-4">{translations[locationLang].location.howToReach}</h3>
 
                 <div>
-                  <h4 className="font-bold text-primary">{t.location.fromKozhikode.title}</h4>
-                  <p>{t.location.fromKozhikode.desc}</p>
+                  <h4 className="font-bold text-primary">{translations[locationLang].location.fromKozhikode.title}</h4>
+                  <p>{translations[locationLang].location.fromKozhikode.desc}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-primary">{t.location.fromAreekode.title}</h4>
-                  <p>{t.location.fromAreekode.desc}</p>
+                  <h4 className="font-bold text-primary">{translations[locationLang].location.fromAreekode.title}</h4>
+                  <p>{translations[locationLang].location.fromAreekode.desc}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-primary">{t.location.fromManjeri.title}</h4>
-                  <p>{t.location.fromManjeri.desc}</p>
+                  <h4 className="font-bold text-primary">{translations[locationLang].location.fromManjeri.title}</h4>
+                  <p>{translations[locationLang].location.fromManjeri.desc}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-primary">{t.location.fromMalappuram.title}</h4>
-                  <p>{t.location.fromMalappuram.desc}</p>
+                  <h4 className="font-bold text-primary">{translations[locationLang].location.fromMalappuram.title}</h4>
+                  <p>{translations[locationLang].location.fromMalappuram.desc}</p>
                 </div>
 
                 <div className="text-sm bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <span className="font-bold">NB:</span> {t.location.note}
+                  <span className="font-bold">NB:</span> {translations[locationLang].location.note}
                 </div>
 
                 {/* Bus Timings */}
                 <div className="mt-6 pt-6 border-t border-primary/10">
-                  <h4 className="font-bold text-primary mb-2">{t.location.busTimings.kondotty}</h4>
+                  <h4 className="font-bold text-primary mb-2">{translations[locationLang].location.busTimings.kondotty}</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
                     <span>1:35 PM</span>
                     <span>2:50 PM</span>
@@ -372,9 +412,10 @@ export default function Home() {
                     <span>5:50 PM</span>
                     <span>6:05 PM</span>
                     <span>6:55 PM</span>
+                    <span>6:05 PM</span>
                   </div>
 
-                  <h4 className="font-bold text-primary mb-2">{t.location.busTimings.edavannappara}</h4>
+                  <h4 className="font-bold text-primary mb-2">{translations[locationLang].location.busTimings.edavannappara}</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                     <span>1:25 PM</span>
                     <span>2:10 PM</span>

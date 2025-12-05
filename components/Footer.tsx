@@ -36,7 +36,7 @@ export default function Footer() {
                             <FaWhatsapp className="h-6 w-6" />
                         </a>
                         <a
-                            href="#"
+                            href="https://t.me/twalaba_conference"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-300 hover:text-white transition-colors"

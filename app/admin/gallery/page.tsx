@@ -102,8 +102,42 @@ export default function GalleryManagement() {
                 {showAddForm && (
                     <div className="mb-8 p-6 rounded-2xl bg-secondary/10 border border-secondary/30">
                         <h3 className="text-lg font-semibold mb-4">Add New Media</h3>
-                        <p className="text-sm text-foreground/60 mb-4">For local images, use path like: /assets/photos/image.png</p>
+                        <p className="text-sm text-foreground/60 mb-4">Upload a file or enter a URL.</p>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="col-span-1 md:col-span-2">
+                                <input
+                                    type="file"
+                                    accept="image/*,video/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            try {
+                                                const res = await fetch('/api/upload', {
+                                                    method: 'POST',
+                                                    body: formData,
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    setFormData(prev => ({ ...prev, media_url: data.url }));
+                                                }
+                                            } catch (error) {
+                                                console.error('Upload failed', error);
+                                                alert('Upload failed');
+                                            }
+                                        }
+                                    }}
+                                    className="mb-2 w-full text-sm text-foreground/70 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Or enter Media URL"
+                                    value={formData.media_url}
+                                    onChange={(e) => setFormData({ ...formData, media_url: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-primary/20 bg-background"
+                                />
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Title (optional)"
@@ -111,28 +145,23 @@ export default function GalleryManagement() {
                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                 className="px-4 py-2 rounded-lg border border-primary/20 bg-background"
                             />
-                            <input
-                                type="text"
-                                placeholder="Media URL or path"
-                                value={formData.media_url}
-                                onChange={(e) => setFormData({ ...formData, media_url: e.target.value })}
-                                className="px-4 py-2 rounded-lg border border-primary/20 bg-background"
-                            />
-                            <select
-                                value={formData.media_type}
-                                onChange={(e) => setFormData({ ...formData, media_type: e.target.value as 'photo' | 'video' })}
-                                className="px-4 py-2 rounded-lg border border-primary/20 bg-background"
-                            >
-                                <option value="photo">Photo</option>
-                                <option value="video">Video</option>
-                            </select>
-                            <input
-                                type="number"
-                                placeholder="Order"
-                                value={formData.display_order}
-                                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                                className="px-4 py-2 rounded-lg border border-primary/20 bg-background"
-                            />
+                            <div className="flex gap-2">
+                                <select
+                                    value={formData.media_type}
+                                    onChange={(e) => setFormData({ ...formData, media_type: e.target.value as 'photo' | 'video' })}
+                                    className="flex-1 px-4 py-2 rounded-lg border border-primary/20 bg-background"
+                                >
+                                    <option value="photo">Photo</option>
+                                    <option value="video">Video</option>
+                                </select>
+                                <input
+                                    type="number"
+                                    placeholder="Order"
+                                    value={formData.display_order}
+                                    onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+                                    className="w-20 px-4 py-2 rounded-lg border border-primary/20 bg-background"
+                                />
+                            </div>
                         </div>
                         <div className="flex gap-2 mt-4">
                             <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-white">

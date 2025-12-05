@@ -18,9 +18,8 @@
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
-  --font-poppins: var(--font-poppins);
-  --font-anek: var(--font-anek-malayalam);
-  --font-noto: var(--font-noto-serif-malayalam);
+  --font-poppins: var(--font-poppins), sans-serif;
+  --font-noto: var(--font-noto-serif-malayalam), serif;
 }
 
 :root {
