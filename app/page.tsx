@@ -530,16 +530,18 @@ export default function Home() {
                     exit={{ opacity: 0 }}
                     className="bg-background rounded-xl overflow-hidden shadow-sm border border-primary/10 group"
                   >
-                    <div className="aspect-video relative overflow-hidden">
+                    <div
+                      className="aspect-video relative overflow-hidden cursor-pointer"
+                      onClick={() => setSelectedItem(item)}
+                    >
                       {item.media_type === 'photo' ? (
                         <img
                           src={item.media_url}
                           alt={item.title || 'Gallery'}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
-                          onClick={() => setSelectedItem(item)}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full relative cursor-pointer" onClick={() => setSelectedItem(item)}>
+                        <div className="w-full h-full relative">
                           <video src={item.media_url} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
                             <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
