@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Malayalam&display=swap');
-
 @font-face {
   font-family: 'Cooper Black';
   src: url('/assets/COOPBL.TTF') format('truetype');
@@ -22,6 +20,7 @@
   --color-accent: var(--accent);
   --font-poppins: var(--font-poppins);
   --font-anek: var(--font-anek-malayalam);
+  --font-noto: var(--font-noto-serif-malayalam);
 }
 
 :root {
@@ -30,7 +29,6 @@
   --primary: #1f3661;
   --secondary: #05cda9;
   --accent: #fa6044;
-  --font-noto-serif-malayalam: 'Noto Serif Malayalam', serif;
 }
 
 .dark {
@@ -52,19 +50,19 @@ body {
   font-family: var(--font-poppins), sans-serif;
 }
 
-/* Apply Noto Serif Malayalam for Malayalam text
-   - elements with HTML lang="ml"
-   - elements with attribute [lang="ml"]
-   - elements with class .ml (useful when lang attribute isn't present)
-*/
-:lang(ml), [lang="ml"], .ml {
+/* Apply Noto Serif Malayalam for Malayalam text */
+:lang(ml),
+[lang="ml"],
+.ml {
   font-family: var(--font-noto-serif-malayalam);
 }
 
-/* Stronger rule to override component-level font-family declarations
-   Applies the Malayalam font to all descendants when language/class is set
-*/
-:lang(ml) , [lang="ml"] , .ml,
-:lang(ml) * , [lang="ml"] * , .ml * {
+/* Stronger rule to override component-level font-family declarations */
+:lang(ml),
+[lang="ml"],
+.ml,
+:lang(ml) *,
+[lang="ml"] *,
+.ml * {
   font-family: var(--font-noto-serif-malayalam) !important;
 }

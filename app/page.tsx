@@ -164,7 +164,7 @@ export default function Home() {
                     <span className="bg-accent/20 text-accent px-3 py-1 rounded-full">4.15 PM - ഉദ്ഘാടനം</span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-anek text-foreground/90">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-noto text-foreground/90">
                     <div>
                       <p className="mb-2"><span className="font-bold text-primary">പതാക ഉയർത്തൽ:</span> ശൈഖുനാ കോട്ടുമല മൊയ്‌തീൻ കുട്ടി മുസ്ലിയാർ</p>
                       <p className="mb-2"><span className="font-bold text-primary">പ്രാർത്ഥന:</span> സയ്യിദ് നിയാസലി ശിഹാബ് തങ്ങൾ പാണക്കാട്</p>
@@ -201,9 +201,9 @@ export default function Home() {
                     <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">7.00 - 9.00 AM</span>
                     <h4 className="text-xl font-bold text-accent">SESSION 01</h4>
                   </div>
-                  <h5 className="text-lg font-bold text-primary mb-2 font-anek">മുതഅല്ലിമീയം ട്രഡീഷൻ</h5>
-                  <p className="text-foreground/70 italic mb-4 font-anek">ഉജ്ജ്വലിച്ച ഉസ്താദിന്റെ ഉത്ഥാന ഗാഥകൾ</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-anek text-foreground/90 text-sm">
+                  <h5 className="text-lg font-bold text-primary mb-2 font-noto">മുതഅല്ലിമീയം ട്രഡീഷൻ</h5>
+                  <p className="text-foreground/70 italic mb-4 font-noto">ഉജ്ജ്വലിച്ച ഉസ്താദിന്റെ ഉത്ഥാന ഗാഥകൾ</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-noto text-foreground/90 text-sm">
                     <div>
                       <p className="mb-2"><span className="font-bold text-primary">ആമുഖം:</span> മുസ്തഫ മാരായമംഗലം</p>
                       <p className="mb-2"><span className="font-bold text-primary">മോഡറേറ്റർ:</span> സ്വാദിഖ് ഫൈസി താനൂർ</p>
@@ -226,8 +226,8 @@ export default function Home() {
                     <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">9.30 - 10.30 AM</span>
                     <h4 className="text-xl font-bold text-accent">SESSION 02</h4>
                   </div>
-                  <h5 className="text-lg font-bold text-primary mb-2 font-anek">റസൂലിയം ഫോക്ലോർ</h5>
-                  <div className="font-anek text-foreground/90 text-sm">
+                  <h5 className="text-lg font-bold text-primary mb-2 font-noto">റസൂലിയം ഫോക്ലോർ</h5>
+                  <div className="font-noto text-foreground/90 text-sm">
                     <p className="mb-2"><span className="font-bold text-primary">ആമുഖം:</span> അലി അദ്ഹം ലക്ഷദ്വീപ്</p>
                     <p className="mb-2"><span className="font-bold text-primary">നേതൃത്വം:</span> മൻസൂർ പുത്തനത്താണി</p>
                     <p className="mb-2"><span className="font-bold text-primary">നന്ദി:</span> ഫവാസ് കരുവാരക്കുണ്ട്</p>
@@ -238,7 +238,7 @@ export default function Home() {
                 <div className="p-6 bg-accent/10">
                   <div className="flex items-center gap-3">
                     <span className="bg-accent text-white px-3 py-1 rounded-full text-sm font-bold">10.30 PM</span>
-                    <h4 className="text-xl font-bold text-primary font-anek">അലുംനി മീറ്റ്</h4>
+                    <h4 className="text-xl font-bold text-primary font-noto">അലുംനി മീറ്റ്</h4>
                   </div>
                 </div>
               </div>
@@ -261,8 +261,8 @@ export default function Home() {
                     <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">8.00 - 9.00 AM</span>
                     <h4 className="text-xl font-bold text-accent">SESSION 03</h4>
                   </div>
-                  <h5 className="text-lg font-bold text-primary mb-2 font-anek">സ്റ്റാർട്ട് അപ്പ്</h5>
-                  <div className="font-anek text-foreground/90 text-sm">
+                  <h5 className="text-lg font-bold text-primary mb-2 font-noto">സ്റ്റാർട്ട് അപ്പ്</h5>
+                  <div className="font-noto text-foreground/90 text-sm">
                     <p className="mb-2"><span className="font-bold text-primary">ആമുഖം:</span> സുഹൈൽ ആലിപ്പറമ്പ്, അസ്‌ലം അസ്‌ഹരി പൊയ്ത്‌തുംകടവ്</p>
                     <p className="mb-2"><span className="font-bold text-primary">നന്ദി:</span> ശാഫി തരുവണ</p>
                   </div>
@@ -274,9 +274,9 @@ export default function Home() {
                     <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">9.00 - 11.00 AM</span>
                     <h4 className="text-xl font-bold text-accent">SESSION 04</h4>
                   </div>
-                  <h5 className="text-lg font-bold text-primary mb-2 font-anek">ഉമ്മത്തീയം (ബൈനോക്കുലർ)</h5>
-                  <p className="text-foreground/70 italic mb-4 font-anek">&apos;നമ്മുടേതും കൂടിയാണ് സമൂഹം&apos;</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-anek text-foreground/90 text-sm">
+                  <h5 className="text-lg font-bold text-primary mb-2 font-noto">ഉമ്മത്തീയം (ബൈനോക്കുലർ)</h5>
+                  <p className="text-foreground/70 italic mb-4 font-noto">&apos;നമ്മുടേതും കൂടിയാണ് സമൂഹം&apos;</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-noto text-foreground/90 text-sm">
                     <div>
                       <p className="mb-2"><span className="font-bold text-primary">ആമുഖം:</span> വാഹിദ് നിലാമുറ്റം</p>
                       <p className="mb-2"><span className="font-bold text-primary">മോഡറേറ്റർ:</span> അൻവർ മുഹ്യുദ്ധീൻ ഹുദവി</p>
@@ -301,8 +301,8 @@ export default function Home() {
                     <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">11.00 AM - 12.00 PM</span>
                     <h4 className="text-xl font-bold text-accent">SESSION 05</h4>
                   </div>
-                  <h5 className="text-lg font-bold text-primary mb-2 font-anek">ആദർശം, സംഘാടനം</h5>
-                  <div className="font-anek text-foreground/90 text-sm">
+                  <h5 className="text-lg font-bold text-primary mb-2 font-noto">ആദർശം, സംഘാടനം</h5>
+                  <div className="font-noto text-foreground/90 text-sm">
                     <p className="mb-2"><span className="font-bold text-primary">ആമുഖം:</span> സയ്യിദ് റുശൈദലി ശിഹാബ് തങ്ങൾ പാണക്കാട്</p>
                     <p className="mb-2"><span className="font-bold text-primary">പ്രസീഡിയം:</span> അബ്ദുൽ വഹാബ് ഹൈതമി, ബഷീർ അസ്അദി</p>
                     <p className="mb-2"><span className="font-bold text-primary">നന്ദി:</span> സ്വാലിഹ് തൃശ്ശൂർ</p>
@@ -315,9 +315,9 @@ export default function Home() {
                     <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">1.30 - 3.30 PM</span>
                     <h4 className="text-xl font-bold text-accent">SESSION 06</h4>
                   </div>
-                  <h5 className="text-lg font-bold text-primary mb-2 font-anek">വിജ്ഞാനീയം - സയൻസ്</h5>
-                  <p className="text-foreground/70 italic mb-4 font-anek">കൃത്രിമ ബുദ്ധി: ശാസ്ത്രം, സമൂഹം, അഖീദ - ഫിഖ്ഹ്</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-anek text-foreground/90 text-sm">
+                  <h5 className="text-lg font-bold text-primary mb-2 font-noto">വിജ്ഞാനീയം - സയൻസ്</h5>
+                  <p className="text-foreground/70 italic mb-4 font-noto">കൃത്രിമ ബുദ്ധി: ശാസ്ത്രം, സമൂഹം, അഖീദ - ഫിഖ്ഹ്</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-noto text-foreground/90 text-sm">
                     <div>
                       <p className="mb-2"><span className="font-bold text-primary">ആമുഖം:</span> റഹ്മത്തുള്ള ഏലംകുളം</p>
                       <p className="mb-2"><span className="font-bold text-primary">മോഡറേറ്റർ:</span> ശുഐബുൽ ഹൈതമി</p>
@@ -338,9 +338,9 @@ export default function Home() {
                 <div className="p-6 bg-accent/10">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="bg-accent text-white px-3 py-1 rounded-full text-sm font-bold">3.30 PM</span>
-                    <h4 className="text-xl font-bold text-primary font-anek">സമാപനം</h4>
+                    <h4 className="text-xl font-bold text-primary font-noto">സമാപനം</h4>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-anek text-foreground/90">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-noto text-foreground/90">
                     <div>
                       <p className="mb-2"><span className="font-bold text-primary">പ്രാർത്ഥന:</span> സയ്യിദ് സാബിഖലി ശിഹാബ് തങ്ങൾ പാണക്കാട്</p>
                       <p className="mb-2"><span className="font-bold text-primary">സ്വാഗതം:</span> അനസ് ഒളവറ</p>
@@ -439,7 +439,7 @@ export default function Home() {
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                className="font-anek space-y-6 text-lg text-foreground/90 bg-background p-8 rounded-2xl shadow-sm border border-primary/10"
+                className="font-noto space-y-6 text-lg text-foreground/90 bg-background p-8 rounded-2xl shadow-sm border border-primary/10"
               >
                 <h3 className="text-2xl font-bold text-accent mb-4">എങ്ങനെ എത്തിച്ചേരാം?</h3>
 
