@@ -5,9 +5,10 @@ import fs from 'fs';
 
 export async function GET(
     request: Request,
-    { params }: { params: { filename: string } }
+    props: { params: Promise<{ filename: string }> }
 ) {
     try {
+        const params = await props.params;
         const filename = params.filename;
         const filePath = path.join(process.cwd(), 'public/assets/photos', filename);
 
