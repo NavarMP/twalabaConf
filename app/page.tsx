@@ -191,6 +191,7 @@ export default function Home() {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
               className="mb-16"
             >
               <div className="bg-primary text-white py-4 px-6 rounded-t-xl">
@@ -421,6 +422,9 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center"
+=======
+              className="text-center mb-12"
+>>>>>>> Stashed changes
 =======
               className="text-center mb-12"
 >>>>>>> Stashed changes
