@@ -51,6 +51,22 @@ export default function GalleryManagement() {
 
     const handleDelete = async (id: string) => {
         if (confirm('Are you sure you want to delete this item?')) {
+            const itemToDelete = items.find(item => item.id === id);
+
+            if (itemToDelete?.media_url) {
+                try {
+                    await fetch('/api/delete-file', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ media_url: itemToDelete.media_url }),
+                    });
+                } catch (error) {
+                    console.error('Failed to delete physical file:', error);
+                }
+            }
+
             await supabase.from('gallery').delete().eq('id', id)
             fetchItems()
         }
