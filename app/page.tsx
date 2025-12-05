@@ -34,6 +34,9 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
   const supabase = createClient();
   const { t, language } = useLanguage();
   const [scheduleLang, setScheduleLang] = useState<'en' | 'ml'>('ml');
@@ -86,6 +89,7 @@ export default function Home() {
     }
 
     setFilteredGallery(result);
+    setCurrentPage(1);
   }, [galleryItems, activeTab, sortBy]);
 
   const handleLike = async (id: string, currentLikes: number) => {
@@ -520,67 +524,105 @@ export default function Home() {
             {filteredGallery.length === 0 ? (
               <p className="text-center text-foreground/60">{t.gallery.comingSoon}</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {filteredGallery.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="bg-background rounded-xl overflow-hidden shadow-sm border border-primary/10 group"
-                  >
-                    <div
-                      className="aspect-video relative overflow-hidden cursor-pointer"
-                      onClick={() => setSelectedItem(item)}
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {filteredGallery.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="bg-background rounded-xl overflow-hidden shadow-sm border border-primary/10 group"
                     >
-                      {item.media_type === 'photo' ? (
-                        <img
-                          src={item.media_url}
-                          alt={item.title || 'Gallery'}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full relative">
-                          <video src={item.media_url} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
-                            <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[16px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                      <div
+                        className="aspect-video relative overflow-hidden cursor-pointer"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        {item.media_type === 'photo' ? (
+                          <img
+                            src={item.media_url}
+                            alt={item.title || 'Gallery'}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full relative">
+                            <video src={item.media_url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                                <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[16px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                              </div>
                             </div>
                           </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLike(item.id, item.likes || 0);
+                            }}
+                            className="text-white hover:text-accent transition-colors flex items-center gap-1"
+                          >
+                            <FiHeart className={`text-xl ${item.likes ? 'fill-accent text-accent' : ''}`} />
+                            <span className="text-sm font-bold">{item.likes || 0}</span>
+                          </button>
+                          <a
+                            href={item.media_url}
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-white hover:text-secondary transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <FiDownload className="text-xl" />
+                          </a>
+                        </div>
+                      </div>
+                      {item.title && (
+                        <div className="p-3">
+                          <p className="text-sm font-medium text-foreground">{item.title}</p>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {filteredGallery.length > itemsPerPage && (
+                  <div className="flex justify-center items-center gap-2 mt-12">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.ceil(filteredGallery.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLike(item.id, item.likes || 0);
-                          }}
-                          className="text-white hover:text-accent transition-colors flex items-center gap-1"
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold transition-colors ${currentPage === page
+                              ? 'bg-primary text-white'
+                              : 'bg-transparent text-foreground/70 hover:bg-primary/5'
+                            }`}
                         >
-                          <FiHeart className={`text-xl ${item.likes ? 'fill-accent text-accent' : ''}`} />
-                          <span className="text-sm font-bold">{item.likes || 0}</span>
+                          {page}
                         </button>
-                        <a
-                          href={item.media_url}
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-white hover:text-secondary transition-colors"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FiDownload className="text-xl" />
-                        </a>
-                      </div>
+                      ))}
                     </div>
-                    {item.title && (
-                      <div className="p-3">
-                        <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredGallery.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(filteredGallery.length / itemsPerPage)}
+                      className="px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
