@@ -43,7 +43,8 @@ export default function Home() {
   const [scheduleLang, setScheduleLang] = useState<'en' | 'ml'>('ml');
   const [locationLang, setLocationLang] = useState<'en' | 'ml'>('ml');
 
-  const [sessionTitle, setSessionTitle] = useState<string>('');
+  const [currentSessionTitle, setCurrentSessionTitle] = useState<string | null>(null);
+  const [nextSessionDetails, setNextSessionDetails] = useState<string | null>(null);
   const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([]);
 
   useEffect(() => {
@@ -66,16 +67,18 @@ export default function Home() {
       const { data: settingsData } = await supabase
         .from('settings')
         .select('*')
-        .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions']);
+        .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details']);
 
       if (settingsData) {
         settingsData.forEach(item => {
           if (item.key === 'live_streaming_url') setLiveUrl(item.value);
-          if (item.key === 'current_session_title') setSessionTitle(item.value);
+          if (item.key === 'current_session_title') setCurrentSessionTitle(item.value);
+          if (item.key === 'next_session_details') setNextSessionDetails(item.value);
           if (item.key === 'previous_sessions') {
             try {
               setPreviousSessions(JSON.parse(item.value));
             } catch (e) {
+              console.error("Failed to parse previous sessions", e);
               setPreviousSessions([]);
             }
           }
@@ -195,7 +198,7 @@ export default function Home() {
                   {/* Current Session Info */}
                   <div className="bg-background/80 backdrop-blur-md p-4 rounded-xl border border-white/10 text-center max-w-sm">
                     <p className="text-xs text-primary font-bold uppercase tracking-widest mb-1">Currently Streaming</p>
-                    <h3 className="text-lg font-bold text-foreground">{sessionTitle || 'Live Session'}</h3>
+                    <h3 className="text-lg font-bold text-foreground">{currentSessionTitle || 'Live Session'}</h3>
 
                     {/* Previous Sessions Dropdown */}
                     {previousSessions.length > 0 && (

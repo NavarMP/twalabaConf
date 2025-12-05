@@ -46,11 +46,22 @@ export default function GalleryManagement() {
         return items.reduce((max, item) => Math.max(max, item.display_order || 0), 0)
     }
 
-    const getEmbedUrl = (url: string) => {
-        // Simple YouTube conversion
+    const getEmbedUrl = (input: string) => {
+        // Check if input is a full iframe tag
+        if (input.trim().startsWith('<iframe')) {
+            const srcMatch = input.match(/src="([^"]+)"/);
+            return srcMatch ? srcMatch[1] : input; // Fallback to input if src not found
+        }
+
+        // Optional: Keep YouTube conversion for convenience
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
+        const match = input.match(regExp);
+        if (match && match[2].length === 11) {
+            return `https://www.youtube.com/embed/${match[2]}`;
+        }
+
+        // Return as is for other URLs (Instagram, Maps, etc.)
+        return input;
     }
 
     const handleLinkSubmit = async () => {

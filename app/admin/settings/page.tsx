@@ -8,6 +8,7 @@ import { FiArrowLeft, FiSave, FiSettings } from 'react-icons/fi'
 export default function SettingsManagement() {
     const [liveUrl, setLiveUrl] = useState('')
     const [sessionTitle, setSessionTitle] = useState('')
+    const [nextSessionDetails, setNextSessionDetails] = useState('')
     const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -22,12 +23,13 @@ export default function SettingsManagement() {
         const { data } = await supabase
             .from('settings')
             .select('*')
-            .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions'])
+            .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details'])
 
         if (data) {
             data.forEach(item => {
                 if (item.key === 'live_streaming_url') setLiveUrl(item.value)
                 if (item.key === 'current_session_title') setSessionTitle(item.value)
+                if (item.key === 'next_session_details') setNextSessionDetails(item.value)
                 if (item.key === 'previous_sessions') {
                     try {
                         setPreviousSessions(JSON.parse(item.value))
@@ -47,6 +49,7 @@ export default function SettingsManagement() {
         const updates = [
             { key: 'live_streaming_url', value: liveUrl, description: 'URL for the live streaming button' },
             { key: 'current_session_title', value: sessionTitle, description: 'Title of the current session' },
+            { key: 'next_session_details', value: nextSessionDetails, description: 'Details about the upcoming session' },
             { key: 'previous_sessions', value: JSON.stringify(previousSessions), description: 'List of previous sessions' }
         ]
 
@@ -147,6 +150,19 @@ export default function SettingsManagement() {
                             <p className="text-xs text-foreground/50 mt-2">
                                 Leave empty to hide the &quot;Live Streaming&quot; button on the homepage.
                             </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2 opacity-80">
+                                Next Session Details (Displayed when no Live URL)
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Starts Tomorrow at 9:00 AM"
+                                value={nextSessionDetails}
+                                onChange={(e) => setNextSessionDetails(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                            />
                         </div>
 
                         <div>
