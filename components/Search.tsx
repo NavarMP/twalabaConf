@@ -38,6 +38,20 @@ export default function Search({ isOpen, onClose, guests, galleryItems }: Search
         }
     }, [isOpen]);
 
+    // Close on outside click
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen, onClose]);
+
     useEffect(() => {
         if (!query.trim()) {
             setResults([]);

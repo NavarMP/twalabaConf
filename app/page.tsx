@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 // import AIAssistant from "@/components/AIAssistant";
@@ -247,12 +248,12 @@ export default function Home() {
             </motion.div>
 
             <motion.div variants={fadeInUp} className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <a
-                href="#schedule"
+              <Link
+                href="/feedback"
                 className="inline-block bg-secondary text-white px-8 py-4 rounded-lg font-bold hover:bg-secondary/90 transition-all shadow-lg hover:shadow-secondary/25"
               >
-                {t.hero.viewSchedule}
-              </a>
+                Share Feedback
+              </Link>
               {liveUrl && (
                 <a
                   href={liveUrl}

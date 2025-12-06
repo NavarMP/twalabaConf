@@ -30,6 +30,25 @@ export type GalleryItem = {
     created_at: string
 }
 
+export type Feedback = {
+    id: string
+    name: string | null
+    phone: string | null
+    email: string | null
+    overall_rating: number // 1-5
+    overall_comments: string | null
+    sessions_rating: number | null
+    sessions_comments: string | null
+    media_rating: number | null
+    media_comments: string | null
+    volunteers_rating: number | null
+    volunteers_comments: string | null
+    venue_rating: number | null
+    venue_comments: string | null
+    suggestions: string | null
+    created_at: string
+}
+
 export type Database = {
     public: {
         Tables: {

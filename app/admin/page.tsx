@@ -48,7 +48,7 @@ export default function AdminDashboard() {
         { href: '/admin/guests', icon: FiUsers, label: 'Guests', description: 'Manage distinguished guests' },
         { href: '/admin/schedule', icon: FiCalendar, label: 'Schedule', description: 'Edit program schedule' },
         { href: '/admin/gallery', icon: FiImage, label: 'Gallery', description: 'Manage photos & videos' },
-        { href: '/admin/settings', icon: FiSettings, label: 'Settings', description: 'Manage site settings' },
+        { href: '/admin/feedback', icon: FiSettings, label: 'Feedback', description: 'View & configure feedback' },
     ]
 
     return (
