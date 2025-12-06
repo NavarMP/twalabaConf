@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { FiUsers, FiCalendar, FiImage, FiLogOut, FiHome, FiSettings } from 'react-icons/fi'
+import { FiUsers, FiCalendar, FiImage, FiLogOut, FiHome, FiSettings, FiMoon, FiSun } from 'react-icons/fi'
+import { useTheme } from 'next-themes'
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
+    const [mounted, setMounted] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+    const { theme, setTheme } = useTheme()
 
     useEffect(() => {
         const checkUser = async () => {
@@ -22,6 +25,10 @@ export default function AdminDashboard() {
         }
         checkUser()
     }, [router, supabase.auth])
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
@@ -54,6 +61,16 @@ export default function AdminDashboard() {
                         <p className="text-white/70 text-sm">SKSSF Twalaba Conference 2025</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Theme Toggle */}
+                        {mounted && (
+                            <button
+                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                            >
+                                {theme === 'dark' ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
+                            </button>
+                        )}
                         <Link
                             href="/"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
