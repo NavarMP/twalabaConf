@@ -134,12 +134,22 @@ export default function Home() {
   };
 
   // Helper functions
-  const handleDownload = async (url: string, title: string | null) => {
+  const handleDownload = async (url: string, title: string | null, mediaType: 'photo' | 'video' | 'embed' = 'photo') => {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
       const mimeType = blob.type;
-      const extension = mimeType.split('/')[1] || 'jpg';
+
+      let extension = mimeType.split('/')[1];
+
+      // Fix for octet-stream or missing extension
+      if (!extension || extension === 'octet-stream') {
+        extension = mediaType === 'video' ? 'mp4' : 'jpg';
+      }
+
+      // Standardize jpeg
+      if (extension === 'jpeg') extension = 'jpg';
+
       const filename = `${title || 'skssf-conference'}.${extension}`;
 
       const blobUrl = window.URL.createObjectURL(blob);
@@ -447,7 +457,7 @@ export default function Home() {
                 className="mb-12 max-w-4xl mx-auto"
               >
 
-              {/* Session Details */}
+                {/* Session Details */}
                 {currentSessionTitle && (
                   <div className="py-4">
                     <p className="text-xs text-primary font-bold uppercase tracking-widest mb-1">Currently Happening</p>
@@ -457,7 +467,7 @@ export default function Home() {
                     )} */}
                   </div>
                 )}
-              
+
                 {/* Live Header Bar */}
                 <div className="bg-red-600 text-white py-3 px-6 rounded-t-xl flex items-center justify-between shadow-lg">
                   <h3 className="text-xl md:text-2xl font-bold flex items-center gap-3">
@@ -878,7 +888,7 @@ export default function Home() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownload(item.media_url, item.title);
+                                handleDownload(item.media_url, item.title, item.media_type);
                               }}
                               className="text-white hover:text-secondary transition-colors"
                               title="Download"
@@ -1007,7 +1017,7 @@ export default function Home() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDownload(selectedItem.media_url, selectedItem.title);
+                      handleDownload(selectedItem.media_url, selectedItem.title, selectedItem.media_type);
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-full font-bold hover:bg-white/90 transition-colors"
                   >
