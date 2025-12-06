@@ -136,8 +136,8 @@ export default function FeedbackPage() {
         const { error: submitError } = await supabase.from('feedback').insert([payload])
 
         if (submitError) {
-            setError('Failed to submit feedback. Please try again.')
-            console.error(submitError)
+            setError(`Failed to submit feedback: ${submitError.message || 'Please try again.'}`)
+            console.error('Feedback submission error:', submitError.message, submitError.code, submitError.details)
         } else {
             setSubmitted(true)
         }
