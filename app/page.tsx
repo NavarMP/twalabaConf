@@ -174,7 +174,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-4">
+            <motion.div variants={fadeInUp} className="flex flex-col items-center gap-6">
               <a
                 href="#schedule"
                 className="inline-block bg-secondary text-white px-8 py-4 rounded-lg font-bold hover:bg-secondary/90 transition-all shadow-lg hover:shadow-secondary/25"
@@ -253,7 +253,7 @@ export default function Home() {
                   {/* Reuse Previous Sessions Dropdown if exists */}
                   {previousSessions.length > 0 && (
                     <div className="relative group">
-                      <button className="text-sm text-white/80 hover:text-white flex items-center justify-center gap-1 mx-auto transition-colors bg-white/10 px-4 py-2 rounded-full">
+                      <button className="text-sm text-foreground/80 hover:text-foreground flex items-center justify-center gap-1 mx-auto transition-colors bg-white/10 px-4 py-2 rounded-full">
                         Watch Previous Sessions
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                       </button>
