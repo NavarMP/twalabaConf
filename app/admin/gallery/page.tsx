@@ -14,14 +14,15 @@ export default function GalleryManagement() {
     // Bulk Action State
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkEditing, setIsBulkEditing] = useState(false);
-    const [bulkEditData, setBulkEditData] = useState<Record<string, { title: string, display_order: number }>>({});
+    const [bulkEditData, setBulkEditData] = useState<Record<string, { title: string, display_order: number, tags: string }>>({});
 
     const [showAddForm, setShowAddForm] = useState(false)
     const [formData, setFormData] = useState({
         title: '',
         media_url: '',
         media_type: 'photo' as 'photo' | 'video' | 'embed',
-        display_order: 0
+        display_order: 0,
+        tags: ''
     })
     const supabase = createClient()
 
@@ -30,6 +31,7 @@ export default function GalleryManagement() {
     const [linkUrl, setLinkUrl] = useState('');
     const [linkType, setLinkType] = useState<'photo' | 'video' | 'embed'>('photo');
     const [linkTitle, setLinkTitle] = useState('');
+    const [linkTags, setLinkTags] = useState('');
 
     const fetchItems = async () => {
         const { data } = await supabase
@@ -95,7 +97,11 @@ export default function GalleryManagement() {
         // Initialize bulkEditData with current values of selected items
         const initialData: any = {};
         items.filter(i => selectedIds.includes(i.id)).forEach(i => {
-            initialData[i.id] = { title: i.title || '', display_order: i.display_order };
+            initialData[i.id] = {
+                title: i.title || '',
+                display_order: i.display_order,
+                tags: i.tags ? i.tags.join(', ') : ''
+            };
         });
         setBulkEditData(initialData);
         setIsBulkEditing(true);
@@ -103,7 +109,12 @@ export default function GalleryManagement() {
 
     const handleBulkSave = async () => {
         const updates = Object.entries(bulkEditData).map(async ([id, data]) => {
-            return supabase.from('gallery').update(data).eq('id', id);
+            const tagsArray = data.tags.split(',').map(t => t.trim()).filter(t => t);
+            return supabase.from('gallery').update({
+                title: data.title,
+                display_order: data.display_order,
+                tags: tagsArray
+            }).eq('id', id);
         });
 
         await Promise.all(updates);
@@ -147,7 +158,8 @@ export default function GalleryManagement() {
             title: linkTitle || 'Untitled',
             media_url: finalUrl,
             media_type: linkType,
-            display_order: getMaxOrder() + 1
+            display_order: getMaxOrder() + 1,
+            tags: linkTags.split(',').map(t => t.trim()).filter(t => t)
         }]);
 
         if (!error) {
@@ -246,7 +258,14 @@ export default function GalleryManagement() {
     }
 
     const handleUpdate = async (id: string) => {
-        const { error } = await supabase.from('gallery').update(formData).eq('id', id)
+        const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(t => t);
+        const { error } = await supabase.from('gallery').update({
+            title: formData.title,
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            display_order: formData.display_order,
+            tags: tagsArray
+        }).eq('id', id)
         if (!error) {
             setEditingId(null)
             fetchItems()
@@ -282,7 +301,8 @@ export default function GalleryManagement() {
             title: item.title || '',
             media_url: item.media_url,
             media_type: item.media_type,
-            display_order: item.display_order
+            display_order: item.display_order,
+            tags: item.tags ? item.tags.join(', ') : ''
         })
     }
 
@@ -471,6 +491,17 @@ export default function GalleryManagement() {
                                     />
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 opacity-80">Tags (Comma separated)</label>
+                                    <input
+                                        type="text"
+                                        value={linkTags}
+                                        onChange={(e) => setLinkTags(e.target.value)}
+                                        placeholder="e.g. day1, speech, crowd"
+                                        className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                    />
+                                </div>
+
                                 <button
                                     onClick={handleLinkSubmit}
                                     disabled={!linkUrl}
@@ -523,8 +554,8 @@ export default function GalleryManagement() {
                             <div
                                 key={item.id}
                                 className={`rounded-xl overflow-hidden border transition-all ${selectedIds.includes(item.id)
-                                        ? 'border-primary ring-2 ring-primary bg-primary/10'
-                                        : 'border-primary/20 bg-primary/5'
+                                    ? 'border-primary ring-2 ring-primary bg-primary/10'
+                                    : 'border-primary/20 bg-primary/5'
                                     }`}
                                 onClick={(e) => {
                                     // Allow clicking anywhere to select if not interacting with controls
@@ -557,7 +588,6 @@ export default function GalleryManagement() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs text-foreground/50 block mb-1">Order</label>
                                             <input
                                                 type="number"
                                                 className="w-full px-2 py-1 text-sm border rounded bg-background"
@@ -565,6 +595,19 @@ export default function GalleryManagement() {
                                                 onChange={(e) => setBulkEditData({
                                                     ...bulkEditData,
                                                     [item.id]: { ...bulkEditData[item.id], display_order: parseInt(e.target.value) || 0 }
+                                                })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-foreground/50 block mb-1">Tags</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-2 py-1 text-sm border rounded bg-background"
+                                                value={bulkEditData[item.id].tags}
+                                                placeholder="e.g. day1, speech"
+                                                onChange={(e) => setBulkEditData({
+                                                    ...bulkEditData,
+                                                    [item.id]: { ...bulkEditData[item.id], tags: e.target.value }
                                                 })}
                                             />
                                         </div>
@@ -599,6 +642,13 @@ export default function GalleryManagement() {
                                             placeholder="Order"
                                             value={formData.display_order}
                                             onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+                                            className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Tags (comma separated)"
+                                            value={formData.tags}
+                                            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                                             className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
                                         />
                                         <div className="flex gap-2">

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ScheduleItem } from '@/types/database'
-import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi'
+import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiAlertTriangle, FiSettings } from 'react-icons/fi'
 import { scheduleData } from '@/lib/data/scheduleData'
 
 export default function ScheduleManagement() {
@@ -24,6 +24,15 @@ export default function ScheduleManagement() {
         extendedDetails: '{}' // JSON string for details + list
     })
     const [currentSession, setCurrentSession] = useState<string | null>(null)
+
+    // Live Settings State
+    const [liveUrl, setLiveUrl] = useState('')
+    const [upcomingStreamUrl, setUpcomingStreamUrl] = useState('')
+    const [nextSessionDetails, setNextSessionDetails] = useState('')
+    const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([])
+    const [showLiveSettings, setShowLiveSettings] = useState(false)
+    const [settingsSaving, setSettingsSaving] = useState(false)
+
     const supabase = createClient()
 
     const fetchItems = async () => {
@@ -35,14 +44,27 @@ export default function ScheduleManagement() {
             .order('display_order', { ascending: true })
         if (data) setItems(data)
 
-        // Fetch current session from settings
+        // Fetch current session and other live settings
         const { data: settingsData } = await supabase
             .from('settings')
-            .select('value')
-            .eq('key', 'current_session_title')
-            .single()
+            .select('*')
+            .in('key', ['current_session_title', 'live_streaming_url', 'upcoming_stream_url', 'next_session_details', 'previous_sessions'])
 
-        if (settingsData) setCurrentSession(settingsData.value)
+        if (settingsData) {
+            settingsData.forEach(item => {
+                if (item.key === 'current_session_title') setCurrentSession(item.value)
+                if (item.key === 'live_streaming_url') setLiveUrl(item.value)
+                if (item.key === 'upcoming_stream_url') setUpcomingStreamUrl(item.value)
+                if (item.key === 'next_session_details') setNextSessionDetails(item.value)
+                if (item.key === 'previous_sessions') {
+                    try {
+                        setPreviousSessions(JSON.parse(item.value))
+                    } catch (e) {
+                        setPreviousSessions([])
+                    }
+                }
+            })
+        }
 
         setLoading(false)
     }
@@ -219,6 +241,38 @@ export default function ScheduleManagement() {
         if (!error) {
             setCurrentSession(null)
         }
+    }
+
+    const handleSaveLiveSettings = async () => {
+        setSettingsSaving(true)
+        const updates = [
+            { key: 'live_streaming_url', value: liveUrl },
+            { key: 'upcoming_stream_url', value: upcomingStreamUrl },
+            { key: 'next_session_details', value: nextSessionDetails },
+            { key: 'previous_sessions', value: JSON.stringify(previousSessions) }
+        ]
+
+        await Promise.all(updates.map(update =>
+            supabase.from('settings').upsert(update)
+        ))
+
+        setSettingsSaving(false)
+        setShowLiveSettings(false)
+        alert('Live settings saved!')
+    }
+
+    const addPreviousSession = () => {
+        setPreviousSessions([...previousSessions, { title: '', url: '' }])
+    }
+
+    const removePreviousSession = (index: number) => {
+        setPreviousSessions(previousSessions.filter((_, i) => i !== index))
+    }
+
+    const updatePreviousSession = (index: number, field: 'title' | 'url', value: string) => {
+        const newSessions = [...previousSessions]
+        newSessions[index] = { ...newSessions[index], [field]: value }
+        setPreviousSessions(newSessions)
     }
 
     const startEdit = (item: ScheduleItem) => {
@@ -433,14 +487,14 @@ export default function ScheduleManagement() {
                                     renderForm(true, item.id)
                                 ) : (
                                     <div className={`p-4 rounded-xl border flex items-center justify-between transition-all ${isLive
-                                            ? 'bg-red-500/10 border-red-500 shadow-md transform scale-[1.01]'
-                                            : 'bg-primary/5 border-primary/20'
+                                        ? 'bg-red-500/10 border-red-500 shadow-md transform scale-[1.01]'
+                                        : 'bg-primary/5 border-primary/20'
                                         }`}>
                                         <div className="flex items-center gap-4 flex-1">
                                             <span className="text-sm text-foreground/50 w-8">#{item.display_order}</span>
                                             <span className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${item.type === 'ceremony' ? 'bg-accent/20 text-accent' :
-                                                    item.type === 'special' ? 'bg-secondary/20 text-secondary' :
-                                                        'bg-primary/20 text-primary'
+                                                item.type === 'special' ? 'bg-secondary/20 text-secondary' :
+                                                    'bg-primary/20 text-primary'
                                                 }`}>
                                                 {item.type.toUpperCase()}
                                             </span>
@@ -536,6 +590,90 @@ export default function ScheduleManagement() {
                         </button>
                     </div>
                 )}
+
+                {/* Live Settings Toggle */}
+                <div className="mb-8">
+                    <button
+                        onClick={() => setShowLiveSettings(!showLiveSettings)}
+                        className="flex items-center gap-2 text-sm font-bold text-primary hover:underline mb-4"
+                    >
+                        <FiSettings /> {showLiveSettings ? 'Hide Live Settings' : 'Configure Live Stream URLs'}
+                    </button>
+
+                    {showLiveSettings && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 mb-8 animate-in slide-in-from-top-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 opacity-80">Live Stream URL</label>
+                                    <input
+                                        type="url"
+                                        placeholder="https://youtube.com/..."
+                                        value={liveUrl}
+                                        onChange={(e) => setLiveUrl(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 opacity-80">Upcoming Stream Link</label>
+                                    <input
+                                        type="url"
+                                        placeholder="https://youtube.com/live/..."
+                                        value={upcomingStreamUrl}
+                                        onChange={(e) => setUpcomingStreamUrl(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 opacity-80">Next Session Details</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Starts Tomorrow at 9:00 AM"
+                                        value={nextSessionDetails}
+                                        onChange={(e) => setNextSessionDetails(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-sm font-medium opacity-80">Previous Sessions</label>
+                                    <button onClick={addPreviousSession} className="text-xs bg-secondary/10 hover:bg-secondary/20 text-secondary px-2 py-1 rounded">+ Add Session</button>
+                                </div>
+                                <div className="space-y-2">
+                                    {previousSessions.map((session, index) => (
+                                        <div key={index} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Title"
+                                                value={session.title}
+                                                onChange={(e) => updatePreviousSession(index, 'title', e.target.value)}
+                                                className="flex-1 px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
+                                            />
+                                            <input
+                                                type="url"
+                                                placeholder="URL"
+                                                value={session.url}
+                                                onChange={(e) => updatePreviousSession(index, 'url', e.target.value)}
+                                                className="flex-1 px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
+                                            />
+                                            <button onClick={() => removePreviousSession(index)} className="p-2 text-red-500 hover:bg-red-50 rounded"><FiTrash2 size={14} /></button>
+                                        </div>
+                                    ))}
+                                    {previousSessions.length === 0 && <p className="text-xs text-foreground/40 italic">No previous sessions.</p>}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSaveLiveSettings}
+                                disabled={settingsSaving}
+                                className="px-6 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2"
+                            >
+                                <FiSave /> {settingsSaving ? 'Saving...' : 'Save Live Settings'}
+                            </button>
+                        </div>
+                    )}
+                </div>
 
                 {showAddForm && renderForm(false)}
                 {renderDaySection(1, day1Items)}

@@ -26,6 +26,7 @@ export type GalleryItem = {
     media_type: 'photo' | 'video' | 'embed'
     likes: number
     display_order: number
+    tags: string[] | null // Array of strings or null
     created_at: string
 }
 

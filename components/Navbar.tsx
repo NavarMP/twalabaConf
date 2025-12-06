@@ -18,8 +18,16 @@ export default function Navbar() {
     const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
     const supabase = createClient();
 
+    const [scrolled, setScrolled] = useState(false);
+
     useEffect(() => {
         setMounted(true);
+
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 50);
+        };
+
+        window.addEventListener('scroll', handleScroll);
 
         // Fetch data for search
         const fetchData = async () => {
@@ -30,12 +38,17 @@ export default function Navbar() {
             if (galleryData) setGalleryItems(galleryData);
         };
         fetchData();
+
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     return (
         <>
             {/* Logo - Top Left */}
-            <div className="fixed top-6 left-6 z-50">
+            <div
+                className={`fixed top-6 left-6 z-50 transition-all duration-300 ${scrolled ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'
+                    }`}
+            >
                 <Link href="/" onClick={() => window.scrollTo(0, 0)}>
                     <div className="relative h-12 w-12 drop-shadow-lg cursor-pointer hover:scale-105 transition-transform">
                         <Image

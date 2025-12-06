@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 // import AIAssistant from "@/components/AIAssistant";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiDownload, FiMapPin, FiCalendar, FiHeart, FiX } from "react-icons/fi";
+import { FiDownload, FiMapPin, FiCalendar, FiHeart, FiX, FiShare2 } from "react-icons/fi";
 import { createClient } from "@/lib/supabase/client";
 import { Guest, GalleryItem } from "@/types/database";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -89,12 +89,26 @@ export default function Home() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    let result = [...galleryItems];
+  const [selectedTag, setSelectedTag] = useState<string>('all-tags');
 
-    // Filter
+  // Derive unique tags
+  const allTags = Array.from(new Set(galleryItems.flatMap(item => item.tags || []))).sort();
+
+  useEffect(() => {
+    let result = galleryItems;
+
+    // Filter by type
     if (activeTab !== 'all') {
-      result = result.filter(item => item.media_type === activeTab);
+      if (activeTab === 'photo') {
+        result = result.filter(item => item.media_type === 'photo');
+      } else if (activeTab === 'video') {
+        result = result.filter(item => item.media_type === 'video' || item.media_type === 'embed');
+      }
+    }
+
+    // Filter by tag
+    if (selectedTag !== 'all-tags') {
+      result = result.filter(item => item.tags && item.tags.includes(selectedTag));
     }
 
     // Sort
@@ -108,7 +122,7 @@ export default function Home() {
 
     setFilteredGallery(result);
     setCurrentPage(1);
-  }, [galleryItems, activeTab, sortBy]);
+  }, [galleryItems, activeTab, sortBy, selectedTag]);
 
   const handleLike = async (id: string, currentLikes: number) => {
     // Optimistic update
@@ -117,6 +131,54 @@ export default function Home() {
     ));
 
     await supabase.rpc('increment_likes', { row_id: id });
+  };
+
+  // Helper functions
+  const handleDownload = async (url: string, title: string | null) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const mimeType = blob.type;
+      const extension = mimeType.split('/')[1] || 'jpg';
+      const filename = `${title || 'skssf-conference'}.${extension}`;
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleShare = async (url: string, title: string | null) => {
+    const shareData = {
+      title: title || 'SKSSF Conference Gallery',
+      text: 'Check out this media from SKSSF Twalaba Conference!',
+      url: url,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy class', err);
+      }
+    }
   };
 
   return (
@@ -174,60 +236,61 @@ export default function Home() {
               </div>
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="flex flex-col items-center gap-6">
+            <motion.div variants={fadeInUp} className="flex flex-col md:flex-row items-center justify-center gap-6">
               <a
                 href="#schedule"
                 className="inline-block bg-secondary text-white px-8 py-4 rounded-lg font-bold hover:bg-secondary/90 transition-all shadow-lg hover:shadow-secondary/25"
               >
                 {t.hero.viewSchedule}
               </a>
-              {liveUrl ? (
-                // STATE 1: LIVE HAPPENING
-                <div className="flex flex-col items-center gap-4">
-                  <a
-                    href={liveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25"
-                  >
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                    </span>
-                    Live Streaming
-                  </a>
+              {liveUrl && (
+                <a
+                  href={liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/25"
+                >
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                  </span>
+                  Live Streaming
+                </a>
+              )}
 
-                  {/* Current Session Info */}
-                  <div className="bg-background/80 backdrop-blur-md p-4 rounded-xl border border-white/10 text-center max-w-sm">
-                    <p className="text-xs text-primary font-bold uppercase tracking-widest mb-1">Currently Streaming</p>
-                    <h3 className="text-lg font-bold text-foreground">{currentSessionTitle || 'Live Session'}</h3>
-
-                    {/* Previous Sessions Dropdown */}
-                    {previousSessions.length > 0 && (
-                      <div className="mt-3 relative group">
-                        <button className="text-sm text-foreground/70 hover:text-primary flex items-center justify-center gap-1 mx-auto transition-colors">
-                          Previous Sessions
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-                          {previousSessions.map((session, idx) => (
-                            <a
-                              key={idx}
-                              href={session.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 hover:text-primary text-left border-b border-white/5 last:border-0"
-                            >
-                              {session.title}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              {/* Current Session Info - Always show if available, regardless of Live URL */}
+              {currentSessionTitle ? (
+                <div className="bg-background/80 backdrop-blur-md px-6 py-3 rounded-lg border border-white/10 flex items-center gap-4 shadow-lg min-h-[60px]">
+                  <div className="flex flex-col items-start">
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-wider">Currently Happening</p>
+                    <h3 className="text-sm font-bold text-foreground text-left leading-tight max-w-[200px] truncate">{currentSessionTitle}</h3>
                   </div>
+
+                  {/* Previous Sessions Dropdown */}
+                  {previousSessions.length > 0 && (
+                    <div className="relative group border-l border-white/10 pl-4">
+                      <button className="text-sm text-foreground/70 hover:text-primary flex items-center justify-center gap-1 transition-colors" title="Previous Sessions">
+                        <span className="sr-only">Previous Sessions</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      <div className="absolute top-full right-0 mt-4 w-64 bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                        {previousSessions.map((session, idx) => (
+                          <a
+                            key={idx}
+                            href={session.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block px-4 py-3 text-sm text-foreground/80 hover:bg-primary/10 hover:text-primary text-left border-b border-white/5 last:border-0"
+                          >
+                            {session.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (nextSessionDetails || upcomingStreamUrl) ? (
-                // STATE 2: UPCOMING SESSION
+                // STATE 2: UPCOMING SESSION (Only if no current session)
                 <div className="flex flex-col items-center gap-4">
                   <div className="bg-background/80 backdrop-blur-md p-6 rounded-2xl border border-primary/20 text-center max-w-md shadow-xl">
                     <p className="text-xs text-primary font-bold uppercase tracking-widest mb-2">Next Session</p>
@@ -374,6 +437,38 @@ export default function Home() {
                 {t.schedule.downloadBrochure}
               </a>
             </motion.div>
+
+            {/* Live Session Embed at Top of Schedule */}
+            {liveUrl && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="mb-12 max-w-4xl mx-auto"
+              >
+                <div className="bg-red-600 text-white py-3 px-6 rounded-t-xl flex items-center justify-between shadow-lg">
+                  <h3 className="text-xl md:text-2xl font-bold flex items-center gap-3">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </span>
+                    Live Now
+                  </h3>
+                  <span className="text-sm bg-white/20 px-3 py-1 rounded-full font-medium">Watch Live</span>
+                </div>
+                <div className="bg-black aspect-video w-full rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-primary/20">
+                  <iframe
+                    src={liveUrl.includes('youtube.com') || liveUrl.includes('youtu.be')
+                      ? `https://www.youtube.com/embed/${liveUrl.split('v=')[1]?.split('&')[0] || liveUrl.split('/').pop()}?autoplay=1&mute=1`
+                      : liveUrl}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title="Live Stream"
+                  ></iframe>
+                </div>
+              </motion.div>
+            )}
 
             {/* Dynamic Schedule Rendering */}
             {[
@@ -670,17 +765,32 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-foreground/70">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-secondary/10 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary"
-                >
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="likes">Most Likes</option>
-                </select>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {allTags.length > 0 && (
+                  <select
+                    value={selectedTag}
+                    onChange={(e) => setSelectedTag(e.target.value)}
+                    className="bg-secondary/10 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all-tags">All Tags</option>
+                    {allTags.map(tag => (
+                      <option key={tag} value={tag}>{tag}</option>
+                    ))}
+                  </select>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-foreground/70">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="bg-secondary/10 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="likes">Most Likes</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -739,16 +849,28 @@ export default function Home() {
                             <FiHeart className={`text-xl ${item.likes ? 'fill-accent text-accent' : ''}`} />
                             <span className="text-sm font-bold">{item.likes || 0}</span>
                           </button>
-                          <a
-                            href={item.media_url}
-                            download
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-white hover:text-secondary transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <FiDownload className="text-xl" />
-                          </a>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShare(item.media_url, item.title);
+                              }}
+                              className="text-white hover:text-blue-400 transition-colors"
+                              title="Share"
+                            >
+                              <FiShare2 className="text-xl" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(item.media_url, item.title);
+                              }}
+                              className="text-white hover:text-secondary transition-colors"
+                              title="Download"
+                            >
+                              <FiDownload className="text-xl" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       {item.title && (
