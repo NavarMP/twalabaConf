@@ -116,6 +116,27 @@ export default function FeedbackPage() {
         setSubmitting(true)
         setError(null)
 
+        // Collect custom section data (sections that aren't in the default list)
+        const defaultSectionKeys = ['overall', 'sessions', 'media', 'volunteers', 'venue']
+        const defaultFieldKeys = ['name', 'phone', 'email']
+
+        const customSectionsData: Record<string, { rating: number; comments: string | null }> = {}
+        for (const section of enabledSections) {
+            if (!defaultSectionKeys.includes(section.key)) {
+                customSectionsData[section.key] = {
+                    rating: ratings[section.key] || 0,
+                    comments: comments[section.key] || null,
+                }
+            }
+        }
+
+        const customFieldsData: Record<string, string | null> = {}
+        for (const field of enabledFields) {
+            if (!defaultFieldKeys.includes(field.key)) {
+                customFieldsData[field.key] = formData[field.key] || null
+            }
+        }
+
         const payload = {
             name: formData.name || null,
             phone: formData.phone || null,
@@ -131,6 +152,9 @@ export default function FeedbackPage() {
             venue_rating: ratings.venue || null,
             venue_comments: comments.venue || null,
             suggestions: suggestions || null,
+            custom_data: Object.keys(customSectionsData).length > 0 || Object.keys(customFieldsData).length > 0
+                ? { sections: customSectionsData, fields: customFieldsData }
+                : null,
         }
 
         const { error: submitError } = await supabase.from('feedback').insert([payload])

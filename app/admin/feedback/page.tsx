@@ -399,6 +399,24 @@ export default function AdminFeedback() {
                                                     <span className="font-bold text-yellow-600">Suggestions:</span> {feedback.suggestions}
                                                 </div>
                                             )}
+                                            {/* Custom Sections */}
+                                            {feedback.custom_data?.sections && Object.entries(feedback.custom_data.sections).map(([key, data]) => (
+                                                <div key={key} className="bg-purple-500/5 p-3 rounded-lg">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-purple-600 capitalize">{key.replace(/_/g, ' ')}:</span>
+                                                        <span className="text-xs text-foreground/60">({data.rating}/5 stars)</span>
+                                                    </div>
+                                                    {data.comments && <p>{data.comments}</p>}
+                                                </div>
+                                            ))}
+                                            {/* Custom Fields */}
+                                            {feedback.custom_data?.fields && Object.entries(feedback.custom_data.fields).map(([key, value]) => (
+                                                value && (
+                                                    <div key={key} className="bg-indigo-500/5 p-3 rounded-lg">
+                                                        <span className="font-bold text-indigo-600 capitalize">{key.replace(/_/g, ' ')}:</span> {value}
+                                                    </div>
+                                                )
+                                            ))}
                                         </div>
                                     </div>
                                 ))

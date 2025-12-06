@@ -46,6 +46,10 @@ export type Feedback = {
     venue_rating: number | null
     venue_comments: string | null
     suggestions: string | null
+    custom_data: {
+        sections?: Record<string, { rating: number; comments: string | null }>
+        fields?: Record<string, string | null>
+    } | null
     created_at: string
 }
 
