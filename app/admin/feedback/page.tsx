@@ -362,7 +362,7 @@ export default function AdminFeedback() {
                                             {['overall', 'sessions', 'media', 'volunteers', 'venue'].map(key => (
                                                 <div key={key}>
                                                     <p className="text-xs text-foreground/60 mb-1 capitalize">{key}</p>
-                                                    <StarDisplay rating={(feedback as Record<string, number | null>)[`${key}_rating`] as number | null} />
+                                                    <StarDisplay rating={(feedback as unknown as Record<string, number | null>)[`${key}_rating`] as number | null} />
                                                 </div>
                                             ))}
                                         </div>
