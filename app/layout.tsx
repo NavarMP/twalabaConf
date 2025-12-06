@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -27,6 +29,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#1f3661",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Prevents zooming which can break fixed layouts
 };
 
 export default function RootLayout({
@@ -37,11 +43,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} ${notoSerifMalayalam.variable} antialiased`}
+        className={`${poppins.variable} ${notoSerifMalayalam.variable} antialiased overflow-x-hidden`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
           <LanguageProvider>
             {children}
+            <PWAInstallPrompt />
           </LanguageProvider>
         </ThemeProvider>
       </body>
