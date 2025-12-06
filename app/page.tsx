@@ -30,6 +30,7 @@ const staggerContainer = {
 export default function Home() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [scheduleItems, setScheduleItems] = useState<any[]>([]);
   const [filteredGallery, setFilteredGallery] = useState<GalleryItem[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'photo' | 'video'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'likes'>('newest');
@@ -53,6 +54,9 @@ export default function Home() {
       // ... (guests and gallery fetch omitted for brevity in diff, but kept in file) ...
       const { data: guestsData } = await supabase.from('guests').select('*').order('display_order', { ascending: true });
       if (guestsData) setGuests(guestsData);
+
+      const { data: scheduleData } = await supabase.from('schedule').select('*').order('display_order', { ascending: true });
+      if (scheduleData) setScheduleItems(scheduleData);
 
       const { data: galleryData } = await supabase.from('gallery').select('*').order('display_order', { ascending: true });
       if (galleryData) {
@@ -123,9 +127,9 @@ export default function Home() {
         {/* Hero Section */}
         <section
           id="hero"
-          className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden bg-gradient-to-br from-background to-primary/10"
+          className="relative min-h-screen flex items-center justify-center pt-16 bg-gradient-to-br from-background to-primary/10"
         >
-          <div className="absolute inset-0 z-0 opacity-20 dark:opacity-10">
+          <div className="absolute inset-0 z-0 opacity-20 dark:opacity-10 overflow-hidden">
             <div className="absolute top-0 left-0 w-96 h-96 bg-secondary rounded-full filter blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent rounded-full filter blur-3xl translate-x-1/2 translate-y-1/2"></div>
           </div>
@@ -372,84 +376,122 @@ export default function Home() {
             </motion.div>
 
             {/* Dynamic Schedule Rendering */}
-            {scheduleData.map((day, dayIndex) => (
-              <motion.div
-                key={dayIndex}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="mb-16"
-              >
-                <div className="bg-primary text-white py-4 px-6 rounded-t-xl">
-                  <h3 className={`text-2xl font-bold ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>{day.date[scheduleLang]}</h3>
-                </div>
-                <div className="bg-background border border-primary/20 rounded-b-xl overflow-hidden">
-                  {day.events.map((event, eventIndex) => (
-                    <div
-                      key={eventIndex}
-                      className={`p-6 border-b border-primary/10 ${event.type === 'session' ? 'bg-secondary/5' : event.type === 'special' ? 'bg-accent/10' : ''}`}
-                    >
-                      <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${event.type === 'special' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
-                          {event.time}
-                        </span>
-                        <h4 className={`text-xl font-bold ${event.type === 'special' ? 'text-primary' : 'text-accent'} ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
-                          {event.title[scheduleLang]}
-                        </h4>
-                      </div>
+            {[
+              { day: 1, date: { en: "December 05, Friday", ml: "ഡിസംബർ 05, വെള്ളി" } },
+              { day: 2, date: { en: "December 06, Saturday", ml: "ഡിസംബർ 06, ശനി" } }
+            ].map((dayInfo) => {
+              const dayEvents = scheduleItems.filter(item => item.day === dayInfo.day);
+              if (dayEvents.length === 0) return null;
 
-                      {event.subtitle && (
-                        <h5 className={`text-lg font-bold text-primary mb-2 ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
-                          {event.subtitle[scheduleLang]}
-                        </h5>
-                      )}
+              return (
+                <motion.div
+                  key={dayInfo.day}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="mb-16"
+                >
+                  <div className="bg-primary text-white py-4 px-6 rounded-t-xl">
+                    <h3 className={`text-2xl font-bold ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>{dayInfo.date[scheduleLang]}</h3>
+                  </div>
+                  <div className="bg-background border border-primary/20 rounded-b-xl overflow-hidden">
+                    {dayEvents.map((event, eventIndex) => {
+                      // Safe Parse Helpers
+                      let title = { en: event.title, ml: event.title };
+                      try {
+                        const parsed = JSON.parse(event.title);
+                        if (parsed.en) title = parsed;
+                      } catch (e) { }
 
-                      {event.details && (
-                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 text-foreground/90 ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
-                          <div>
-                            {event.details.map((detail, i) => (
-                              <p key={i} className="mb-2">
-                                <span className="font-bold text-primary">{detail.label[scheduleLang]}:</span> {detail.content[scheduleLang]}
-                              </p>
-                            ))}
+                      let subtitle = null;
+                      if (event.subtitle) {
+                        subtitle = { en: event.subtitle, ml: event.subtitle };
+                        try {
+                          const parsed = JSON.parse(event.subtitle);
+                          if (parsed.en) subtitle = parsed;
+                        } catch (e) { }
+                      }
+
+                      // Extract extended details
+                      let details: any[] = [];
+                      let list: any[] = [];
+
+                      if (event.details && typeof event.details === 'object') {
+                        // Cast to any to access custom properties if stored loosely
+                        const d = event.details as any;
+                        if (d.details && Array.isArray(d.details)) details = d.details;
+                        if (d.list && Array.isArray(d.list)) list = d.list;
+                      }
+
+                      return (
+                        <div
+                          key={event.id}
+                          className={`p-6 border-b border-primary/10 ${event.type === 'session' ? 'bg-secondary/5' : event.type === 'special' ? 'bg-accent/10' : ''}`}
+                        >
+                          <div className="flex flex-wrap items-center gap-3 mb-4">
+                            <span className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 ${event.type === 'special' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
+                              {event.time}
+                              {currentSessionTitle && (title.en === currentSessionTitle || title.ml === currentSessionTitle) && (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-white px-2 py-0.5 rounded-full animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                                  LIVE
+                                </span>
+                              )}
+                            </span>
+                            <h4 className={`text-xl font-bold ${event.type === 'special' ? 'text-primary' : 'text-accent'} ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
+                              {title[scheduleLang]}
+                            </h4>
                           </div>
-                          {event.list && (
-                            <div>
-                              {event.list.map((list, i) => (
-                                <div key={i}>
-                                  {list.title && <p className="font-bold text-primary mb-2">{list.title[scheduleLang]}:</p>}
-                                  <ul className="list-disc list-inside text-sm space-y-1">
-                                    {list.items.map((item, j) => (
-                                      <li key={j}>{item[scheduleLang]}</li>
-                                    ))}
-                                  </ul>
+
+                          {subtitle && (
+                            <h5 className={`text-lg font-bold text-primary mb-2 ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
+                              {subtitle[scheduleLang]}
+                            </h5>
+                          )}
+
+                          {/* Render Details */}
+                          {(details.length > 0 || list.length > 0) && (
+                            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 text-foreground/90 ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
+                              {details.length > 0 && (
+                                <div>
+                                  {details.map((detail: any, i: number) => (
+                                    <p key={i} className="mb-2">
+                                      <span className="font-bold text-primary">{detail.label[scheduleLang]}:</span> {detail.content[scheduleLang]}
+                                    </p>
+                                  ))}
                                 </div>
-                              ))}
+                              )}
+
+                              {list.length > 0 && (
+                                <div>
+                                  {list.map((listItem: any, i: number) => (
+                                    <div key={i} className="mb-4">
+                                      {listItem.title && <p className="font-bold text-primary mb-2">{listItem.title[scheduleLang]}:</p>}
+                                      {/* Check if items is array */}
+                                      {listItem.items && (
+                                        /^\d/.test(listItem.title?.en || '') || listItem.items.length > 3 ? (
+                                          <ol className="list-decimal list-inside space-y-1 text-sm">
+                                            {listItem.items.map((it: any, j: number) => <li key={j}>{typeof it === 'string' ? it : it[scheduleLang]}</li>)}
+                                          </ol>
+                                        ) : (
+                                          <ul className="list-disc list-inside text-sm space-y-1">
+                                            {listItem.items.map((it: any, j: number) => <li key={j}>{typeof it === 'string' ? it : it[scheduleLang]}</li>)}
+                                          </ul>
+                                        )
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
-
-                      {/* Handle lists without details (like Session 1 topics) */}
-                      {!event.details && event.list && (
-                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 text-foreground/90 text-sm ${scheduleLang === 'ml' ? 'font-noto' : ''}`}>
-                          {event.list.map((list, i) => (
-                            <div key={i}>
-                              {list.title && <p className="font-bold text-primary mb-2">{list.title[scheduleLang]}:</p>}
-                              <ol className="list-decimal list-inside space-y-1">
-                                {list.items.map((item, j) => (
-                                  <li key={j}>{item[scheduleLang]}</li>
-                                ))}
-                              </ol>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )
+            })}
 
           </div>
         </section>
