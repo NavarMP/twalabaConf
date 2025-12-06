@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import NotificationManager from "@/components/NotificationManager";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -49,6 +50,7 @@ export default function RootLayout({
           <LanguageProvider>
             {children}
             <PWAInstallPrompt />
+            <NotificationManager />
           </LanguageProvider>
         </ThemeProvider>
       </body>

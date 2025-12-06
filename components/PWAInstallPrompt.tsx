@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { FiDownload, FiShare, FiPlusSquare, FiX } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -8,8 +9,12 @@ export default function PWAInstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showPrompt, setShowPrompt] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
+        // Do not show on admin pages
+        if (pathname?.startsWith('/admin')) return;
+
         // Register Service Worker manually to bypass next-pwa build issues with path
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
@@ -47,7 +52,15 @@ export default function PWAInstallPrompt() {
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         };
-    }, []);
+    }, [pathname]);
+
+    // Auto-close after 15 seconds
+    useEffect(() => {
+        if (showPrompt) {
+            const timer = setTimeout(() => handleClose(), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [showPrompt]);
 
     const handleInstallClick = async () => {
         if (deferredPrompt) {
@@ -79,7 +92,7 @@ export default function PWAInstallPrompt() {
 
                         <button
                             onClick={handleClose}
-                            className="absolute top-2 right-2 p-1 text-foreground/50 hover:text-foreground transition-colors"
+                            className="absolute top-2 right-2 p-1 text-white/50 hover:text-white transition-colors"
                         >
                             <FiX />
                         </button>
@@ -90,7 +103,7 @@ export default function PWAInstallPrompt() {
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-bold text-lg mb-1">Install App</h3>
-                                <p className="text-sm text-foreground/70 mb-3">
+                                <p className="text-sm text-white/70 mb-3">
                                     {isIOS
                                         ? "Install this web app on your iPhone for the best experience."
                                         : "Install our app for easier access and a better experience."}

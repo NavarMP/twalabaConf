@@ -74,6 +74,56 @@ export default function AdminDashboard() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-12 px-6">
+
+                {/* Notification Broadcaster */}
+                <div className="mb-12 bg-primary/5 border border-primary/20 rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                        <FiSettings className="w-5 h-5 text-primary" />
+                        Broadcast Notification
+                    </h3>
+                    <div className="flex gap-4 items-end">
+                        <div className="flex-1">
+                            <label className="text-xs font-bold uppercase text-foreground/50 mb-1 block">Message</label>
+                            <input
+                                type="text"
+                                id="notification-input"
+                                placeholder="e.g. Session 3 Starting Now!"
+                                className="w-full px-4 py-3 rounded-lg border border-primary/20 bg-background"
+                            />
+                        </div>
+                        <button
+                            onClick={async () => {
+                                const input = document.getElementById('notification-input') as HTMLInputElement;
+                                if (!input.value) return;
+
+                                const payload = {
+                                    message: input.value,
+                                    timestamp: Date.now(),
+                                    id: crypto.randomUUID()
+                                };
+
+                                const { error } = await supabase.from('settings').upsert({
+                                    key: 'notification_broadcast',
+                                    value: JSON.stringify(payload)
+                                });
+
+                                if (!error) {
+                                    alert('Notification Sent!');
+                                    input.value = '';
+                                } else {
+                                    alert('Error: ' + error.message);
+                                }
+                            }}
+                            className="bg-primary text-white font-bold px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            Send Alert
+                        </button>
+                    </div>
+                    <p className="text-xs text-foreground/50 mt-2">
+                        This will show a toast notification to all currently open users.
+                    </p>
+                </div>
+
                 <h2 className="text-xl font-semibold text-foreground mb-8">Manage Content</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

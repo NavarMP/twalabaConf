@@ -11,6 +11,11 @@ export default function GalleryManagement() {
     const [items, setItems] = useState<GalleryItem[]>([])
     const [loading, setLoading] = useState(true)
     const [editingId, setEditingId] = useState<string | null>(null)
+    // Bulk Action State
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isBulkEditing, setIsBulkEditing] = useState(false);
+    const [bulkEditData, setBulkEditData] = useState<Record<string, { title: string, display_order: number }>>({});
+
     const [showAddForm, setShowAddForm] = useState(false)
     const [formData, setFormData] = useState({
         title: '',
@@ -41,8 +46,75 @@ export default function GalleryManagement() {
 
     const [uploadQueue, setUploadQueue] = useState<{ file: File, progress: number, status: 'pending' | 'compressing' | 'uploading' | 'done' | 'error', type: string }[]>([])
 
-    // ... items fetching ...
+    // Selection Handlers
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
 
+    const toggleSelectAll = () => {
+        if (selectedIds.length === items.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(items.map(i => i.id));
+        }
+    };
+
+    // Bulk Actions
+    const handleBulkDelete = async () => {
+        if (!confirm(`Delete ${selectedIds.length} items?`)) return;
+
+        // 1. Delete physical files
+        const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
+        for (const item of itemsToDelete) {
+            if (item.media_url && !item.media_url.includes('youtube')) {
+                try {
+                    await fetch('/api/delete-file', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ media_url: item.media_url }),
+                    });
+                } catch (e) {
+                    console.error('File delete failed', e);
+                }
+            }
+        }
+
+        // 2. Delete DB records
+        const { error } = await supabase.from('gallery').delete().in('id', selectedIds);
+        if (!error) {
+            setSelectedIds([]);
+            fetchItems();
+        } else {
+            alert('Bulk delete failed: ' + error.message);
+        }
+    };
+
+    const startBulkEdit = () => {
+        // Initialize bulkEditData with current values of selected items
+        const initialData: any = {};
+        items.filter(i => selectedIds.includes(i.id)).forEach(i => {
+            initialData[i.id] = { title: i.title || '', display_order: i.display_order };
+        });
+        setBulkEditData(initialData);
+        setIsBulkEditing(true);
+    };
+
+    const handleBulkSave = async () => {
+        const updates = Object.entries(bulkEditData).map(async ([id, data]) => {
+            return supabase.from('gallery').update(data).eq('id', id);
+        });
+
+        await Promise.all(updates);
+        setIsBulkEditing(false);
+        setBulkEditData({});
+        setSelectedIds([]);
+        fetchItems();
+    };
+
+
+    // ... upload logic ...
     const getMaxOrder = () => {
         return items.reduce((max, item) => Math.max(max, item.display_order || 0), 0)
     }
@@ -224,7 +296,7 @@ export default function GalleryManagement() {
 
     return (
         <div className="min-h-screen bg-background">
-            <header className="bg-primary text-white py-4 px-6 shadow-lg">
+            <header className="bg-primary text-white py-4 px-6 shadow-lg sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/admin" className="p-2 rounded-lg hover:bg-white/10 transition-colors">
@@ -232,160 +304,213 @@ export default function GalleryManagement() {
                         </Link>
                         <div>
                             <h1 className="text-2xl font-bold">Gallery Management</h1>
-                            <p className="text-white/70 text-sm">Add photos and videos to the gallery</p>
+                            {selectedIds.length > 0 ? (
+                                <p className="text-white/90 text-sm font-bold bg-white/20 px-2 py-0.5 rounded inline-block">
+                                    {selectedIds.length} Selected
+                                </p>
+                            ) : (
+                                <p className="text-white/70 text-sm">Add photos and videos to the gallery</p>
+                            )}
                         </div>
                     </div>
 
+                    <div className="flex items-center gap-3">
+                        {/* Bulk Actions Toolbar */}
+                        {selectedIds.length > 0 && !isBulkEditing && (
+                            <>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold transition-all"
+                                >
+                                    <FiTrash2 /> Delete ({selectedIds.length})
+                                </button>
+                                <button
+                                    onClick={startBulkEdit}
+                                    className="flex items-center gap-2 px-3 py-2 bg-white text-primary hover:bg-white/90 rounded-lg text-sm font-bold transition-all"
+                                >
+                                    <FiEdit2 /> Edit/Arrange ({selectedIds.length})
+                                </button>
+                            </>
+                        )}
+
+                        {isBulkEditing && (
+                            <>
+                                <button
+                                    onClick={() => { setIsBulkEditing(false); setBulkEditData({}); }}
+                                    className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleBulkSave}
+                                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/90 text-white rounded-lg text-sm font-bold transition-all shadow-lg"
+                                >
+                                    <FiSave /> Save Changes
+                                </button>
+                            </>
+                        )}
+
+                        {!isBulkEditing && (
+                            <button
+                                onClick={toggleSelectAll}
+                                className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-all"
+                            >
+                                {selectedIds.length === items.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </header>
 
             <main className="max-w-7xl mx-auto py-8 px-6">
                 {/* Add Form */}
                 {/* Bulk Upload / Add Area */}
-                <div className="mb-8 p-6 rounded-2xl bg-secondary/10 border border-secondary/30">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => setUploadMode('file')}
-                                className={`px-4 py-2 rounded-lg font-bold transition-all ${uploadMode === 'file' ? 'bg-primary text-white shadow-lg' : 'bg-background text-foreground/70 hover:text-primary'}`}
-                            >
-                                File Upload
-                            </button>
-                            <button
-                                onClick={() => setUploadMode('url')}
-                                className={`px-4 py-2 rounded-lg font-bold transition-all ${uploadMode === 'url' ? 'bg-primary text-white shadow-lg' : 'bg-background text-foreground/70 hover:text-primary'}`}
-                            >
-                                Link / Embed
-                            </button>
-                        </div>
-                    </div>
-
-                    {uploadMode === 'file' ? (
-                        <>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold">Upload Media</h3>
-                                <div className="text-sm text-foreground/60">
-                                    Supports JPG, PNG, MP4. (Max 50MB)
-                                </div>
+                {!isBulkEditing && (
+                    <div className="mb-8 p-6 rounded-2xl bg-secondary/10 border border-secondary/30">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setUploadMode('file')}
+                                    className={`px-4 py-2 rounded-lg font-bold transition-all ${uploadMode === 'file' ? 'bg-primary text-white shadow-lg' : 'bg-background text-foreground/70 hover:text-primary'}`}
+                                >
+                                    File Upload
+                                </button>
+                                <button
+                                    onClick={() => setUploadMode('url')}
+                                    className={`px-4 py-2 rounded-lg font-bold transition-all ${uploadMode === 'url' ? 'bg-primary text-white shadow-lg' : 'bg-background text-foreground/70 hover:text-primary'}`}
+                                >
+                                    Link / Embed
+                                </button>
                             </div>
+                        </div>
 
-                            {/* Drop Zone */}
-                            <div
-                                className="relative border-2 border-dashed border-primary/30 rounded-xl p-8 text-center hover:bg-primary/5 transition-colors cursor-pointer"
-                                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
-                                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-primary'); }}
-                                onDrop={async (e) => {
-                                    e.preventDefault();
-                                    e.currentTarget.classList.remove('border-primary');
-                                    const files = Array.from(e.dataTransfer.files);
-                                    handleBulkUpload(files);
-                                }}
-                            >
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*,video/*"
-                                    onChange={(e) => {
-                                        if (e.target.files) handleBulkUpload(Array.from(e.target.files));
+                        {uploadMode === 'file' ? (
+                            <>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-bold">Upload Media</h3>
+                                    <div className="text-sm text-foreground/60">
+                                        Supports JPG, PNG, MP4. (Max 50MB)
+                                    </div>
+                                </div>
+
+                                {/* Drop Zone */}
+                                <div
+                                    className="relative border-2 border-dashed border-primary/30 rounded-xl p-8 text-center hover:bg-primary/5 transition-colors cursor-pointer"
+                                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
+                                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-primary'); }}
+                                    onDrop={async (e) => {
+                                        e.preventDefault();
+                                        e.currentTarget.classList.remove('border-primary');
+                                        const files = Array.from(e.dataTransfer.files);
+                                        handleBulkUpload(files);
                                     }}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="p-4 rounded-full bg-primary/10 text-primary">
-                                        <FiPlus className="w-8 h-8" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-lg">Drop files here or click to upload</p>
-                                        <p className="text-sm text-foreground/50">Select multiple photos/videos to bulk upload</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="max-w-xl mx-auto space-y-4">
-                            <h3 className="text-lg font-bold mb-4">Add External Link</h3>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1 opacity-80">Media Type</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setLinkType('photo')}
-                                        className={`flex-1 py-2 rounded-lg border ${linkType === 'photo' ? 'bg-primary text-white border-primary' : 'border-primary/20 hover:border-primary'}`}
-                                    >Photo</button>
-                                    <button
-                                        onClick={() => setLinkType('video')}
-                                        className={`flex-1 py-2 rounded-lg border ${linkType === 'video' ? 'bg-primary text-white border-primary' : 'border-primary/20 hover:border-primary'}`}
-                                    >Video</button>
-                                    <button
-                                        onClick={() => setLinkType('embed')}
-                                        className={`flex-1 py-2 rounded-lg border ${linkType === 'embed' ? 'bg-primary text-white border-primary' : 'border-primary/20 hover:border-primary'}`}
-                                    >Embed (YouTube)</button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1 opacity-80">
-                                    {linkType === 'embed' ? 'YouTube URL / Embed Link' : 'Direct Media URL'}
-                                </label>
-                                <input
-                                    type="url"
-                                    value={linkUrl}
-                                    onChange={(e) => setLinkUrl(e.target.value)}
-                                    placeholder={linkType === 'embed' ? "https://www.youtube.com/watch?v=..." : "https://example.com/image.jpg"}
-                                    className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1 opacity-80">Title (Optional)</label>
-                                <input
-                                    type="text"
-                                    value={linkTitle}
-                                    onChange={(e) => setLinkTitle(e.target.value)}
-                                    placeholder="Enter a title"
-                                    className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleLinkSubmit}
-                                disabled={!linkUrl}
-                                className="w-full py-3 bg-secondary text-white font-bold rounded-xl hover:bg-secondary/90 transition-all disabled:opacity-50"
-                            >
-                                Add to Gallery
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Progress Area */}
-                    {uploadQueue.length > 0 && (
-                        <div className="mt-6 space-y-3">
-                            <h4 className="font-bold text-sm">Uploading...</h4>
-                            {uploadQueue.map((file, idx) => (
-                                <div key={idx} className="bg-background rounded-lg p-3 flex items-center gap-3 border border-border">
-                                    <div className="bg-primary/10 p-2 rounded text-primary">
-                                        {file.type.startsWith('video') ? <FiVideo /> : <FiImage />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{file.file.name}</p>
-                                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2 overflow-hidden">
-                                            <div
-                                                className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                                                style={{ width: `${file.progress}%` }}
-                                            />
+                                >
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*,video/*"
+                                        onChange={(e) => {
+                                            if (e.target.files) handleBulkUpload(Array.from(e.target.files));
+                                        }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="p-4 rounded-full bg-primary/10 text-primary">
+                                            <FiPlus className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-lg">Drop files here or click to upload</p>
+                                            <p className="text-sm text-foreground/50">Select multiple photos/videos to bulk upload</p>
                                         </div>
                                     </div>
-                                    <div className="text-xs font-bold w-20 text-right">
-                                        {file.status === 'done' ? '✓' :
-                                            file.status === 'compressing' ? 'Compressing...' :
-                                                file.status === 'error' ? 'Error' :
-                                                    `${file.progress}%`}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="max-w-xl mx-auto space-y-4">
+                                <h3 className="text-lg font-bold mb-4">Add External Link</h3>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 opacity-80">Media Type</label>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setLinkType('photo')}
+                                            className={`flex-1 py-2 rounded-lg border ${linkType === 'photo' ? 'bg-primary text-white border-primary' : 'border-primary/20 hover:border-primary'}`}
+                                        >Photo</button>
+                                        <button
+                                            onClick={() => setLinkType('video')}
+                                            className={`flex-1 py-2 rounded-lg border ${linkType === 'video' ? 'bg-primary text-white border-primary' : 'border-primary/20 hover:border-primary'}`}
+                                        >Video</button>
+                                        <button
+                                            onClick={() => setLinkType('embed')}
+                                            className={`flex-1 py-2 rounded-lg border ${linkType === 'embed' ? 'bg-primary text-white border-primary' : 'border-primary/20 hover:border-primary'}`}
+                                        >Embed (YouTube)</button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 opacity-80">
+                                        {linkType === 'embed' ? 'YouTube URL / Embed Link' : 'Direct Media URL'}
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={linkUrl}
+                                        onChange={(e) => setLinkUrl(e.target.value)}
+                                        placeholder={linkType === 'embed' ? "https://www.youtube.com/watch?v=..." : "https://example.com/image.jpg"}
+                                        className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 opacity-80">Title (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={linkTitle}
+                                        onChange={(e) => setLinkTitle(e.target.value)}
+                                        placeholder="Enter a title"
+                                        className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleLinkSubmit}
+                                    disabled={!linkUrl}
+                                    className="w-full py-3 bg-secondary text-white font-bold rounded-xl hover:bg-secondary/90 transition-all disabled:opacity-50"
+                                >
+                                    Add to Gallery
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Progress Area */}
+                        {uploadQueue.length > 0 && (
+                            <div className="mt-6 space-y-3">
+                                <h4 className="font-bold text-sm">Uploading...</h4>
+                                {uploadQueue.map((file, idx) => (
+                                    <div key={idx} className="bg-background rounded-lg p-3 flex items-center gap-3 border border-border">
+                                        <div className="bg-primary/10 p-2 rounded text-primary">
+                                            {file.type.startsWith('video') ? <FiVideo /> : <FiImage />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium truncate">{file.file.name}</p>
+                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2 overflow-hidden">
+                                                <div
+                                                    className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                                                    style={{ width: `${file.progress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="text-xs font-bold w-20 text-right">
+                                            {file.status === 'done' ? '✓' :
+                                                file.status === 'compressing' ? 'Compressing...' :
+                                                    file.status === 'error' ? 'Error' :
+                                                        `${file.progress}%`}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Gallery Grid */}
                 {items.length === 0 ? (
@@ -395,8 +520,56 @@ export default function GalleryManagement() {
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {items.map((item) => (
-                            <div key={item.id} className="rounded-xl overflow-hidden border border-primary/20 bg-primary/5">
-                                {editingId === item.id ? (
+                            <div
+                                key={item.id}
+                                className={`rounded-xl overflow-hidden border transition-all ${selectedIds.includes(item.id)
+                                        ? 'border-primary ring-2 ring-primary bg-primary/10'
+                                        : 'border-primary/20 bg-primary/5'
+                                    }`}
+                                onClick={(e) => {
+                                    // Allow clicking anywhere to select if not interacting with controls
+                                    if (!(e.target as HTMLElement).closest('button, input, select')) {
+                                        toggleSelect(item.id);
+                                    }
+                                }}
+                            >
+                                {isBulkEditing && selectedIds.includes(item.id) && bulkEditData[item.id] ? (
+                                    <div className="p-4 space-y-3 bg-white dark:bg-gray-900 h-full">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-xs font-bold uppercase text-primary">Editing</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={true}
+                                                readOnly
+                                                className="w-4 h-4 text-primary rounded"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-foreground/50 block mb-1">Title</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-2 py-1 text-sm border rounded bg-background"
+                                                value={bulkEditData[item.id].title}
+                                                onChange={(e) => setBulkEditData({
+                                                    ...bulkEditData,
+                                                    [item.id]: { ...bulkEditData[item.id], title: e.target.value }
+                                                })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-foreground/50 block mb-1">Order</label>
+                                            <input
+                                                type="number"
+                                                className="w-full px-2 py-1 text-sm border rounded bg-background"
+                                                value={bulkEditData[item.id].display_order}
+                                                onChange={(e) => setBulkEditData({
+                                                    ...bulkEditData,
+                                                    [item.id]: { ...bulkEditData[item.id], display_order: parseInt(e.target.value) || 0 }
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : editingId === item.id ? (
                                     <div className="p-4 space-y-3">
                                         <input
                                             type="text"
@@ -439,7 +612,17 @@ export default function GalleryManagement() {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="aspect-video bg-gray-200 dark:bg-gray-800 relative">
+                                        <div className="aspect-video bg-gray-200 dark:bg-gray-800 relative group">
+                                            {/* Selection Checkbox Overlay */}
+                                            <div className="absolute top-2 right-2 z-10">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(item.id)}
+                                                    onChange={() => toggleSelect(item.id)}
+                                                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary shadow-lg cursor-pointer"
+                                                />
+                                            </div>
+
                                             {item.media_type === 'photo' && item.media_url ? (
                                                 <img
                                                     src={item.media_url}
@@ -457,7 +640,7 @@ export default function GalleryManagement() {
                                                     {item.media_type === 'video' ? <FiVideo className="w-12 h-12 text-foreground/30" /> : <FiImage className="w-12 h-12 text-foreground/30" />}
                                                 </div>
                                             )}
-                                            <div className="absolute top-2 left-2">
+                                            <div className="absolute top-2 left-2 pointer-events-none">
                                                 <span className={`px-2 py-1 rounded text-xs font-bold ${item.media_type === 'video' ? 'bg-accent text-white' : item.media_type === 'embed' ? 'bg-purple-600 text-white' : 'bg-primary text-white'}`}>
                                                     {item.media_type === 'video' ? 'VIDEO' : item.media_type === 'embed' ? 'EMBED' : 'PHOTO'}
                                                 </span>
@@ -467,13 +650,13 @@ export default function GalleryManagement() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <span className="text-sm text-foreground/50">#{item.display_order}</span>
-                                                    <h4 className="font-medium text-sm">{item.title || 'Untitled'}</h4>
+                                                    <h4 className="font-medium text-sm truncate max-w-[120px]" title={item.title || ''}>{item.title || 'Untitled'}</h4>
                                                 </div>
                                                 <div className="flex gap-1">
-                                                    <button onClick={() => startEdit(item)} className="p-2 rounded-lg hover:bg-primary/10 text-primary">
+                                                    <button onClick={(e) => { e.stopPropagation(); startEdit(item); }} className="p-2 rounded-lg hover:bg-primary/10 text-primary">
                                                         <FiEdit2 className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg hover:bg-accent/10 text-accent">
+                                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 rounded-lg hover:bg-accent/10 text-accent">
                                                         <FiTrash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
