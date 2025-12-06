@@ -62,3 +62,15 @@ body {
 .ml {
   font-family: var(--font-noto-serif-malayalam) !important;
 }
+
+@font-face {
+  font-family: 'NotoSansMalayalam';
+  src: url('/fonts/NotoSansMalayalam-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-malayalam {
+  font-family: 'NotoSansMalayalam', sans-serif;
+}

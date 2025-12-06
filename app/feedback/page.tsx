@@ -24,13 +24,15 @@ type FeedbackField = {
     labelMl: string
     enabled: boolean
     required: boolean
-    type: 'text' | 'tel' | 'email'
+    type: 'text' | 'tel' | 'email' | 'select'
+    options?: string[]
+    displayOrder: number
 }
 
 const defaultFields: FeedbackField[] = [
-    { key: 'name', label: 'Name', labelMl: 'പേര്', enabled: true, required: true, type: 'text' },
-    { key: 'phone', label: 'Phone', labelMl: 'ഫോൺ', enabled: true, required: true, type: 'tel' },
-    { key: 'email', label: 'Email', labelMl: 'ഇമെയിൽ', enabled: true, required: false, type: 'email' },
+    { key: 'name', label: 'Name', labelMl: 'പേര്', enabled: true, required: true, type: 'text', displayOrder: 0 },
+    { key: 'phone', label: 'Phone', labelMl: 'ഫോൺ', enabled: true, required: true, type: 'tel', displayOrder: 1 },
+    { key: 'email', label: 'Email', labelMl: 'ഇമെയിൽ', enabled: true, required: false, type: 'email', displayOrder: 2 },
 ]
 
 const defaultSections: FeedbackSection[] = [
@@ -78,7 +80,7 @@ export default function FeedbackPage() {
     }, [])
 
     const enabledSections = sections.filter(s => s.enabled).sort((a, b) => a.displayOrder - b.displayOrder)
-    const enabledFields = fields.filter(f => f.enabled)
+    const enabledFields = fields.filter(f => f.enabled).sort((a, b) => a.displayOrder - b.displayOrder)
 
     const handleFieldChange = (key: string, value: string) => {
         setFormData(prev => ({ ...prev, [key]: value }))
@@ -252,14 +254,28 @@ export default function FeedbackPage() {
                                                         {field.label} / <span className="font-noto">{field.labelMl}</span>
                                                         {field.required ? <span className="text-red-500 ml-1">*</span> : <span className="text-foreground/40 ml-1">(Optional)</span>}
                                                     </label>
-                                                    <input
-                                                        type={field.type}
-                                                        value={formData[field.key] || ''}
-                                                        onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                                                        placeholder={`Your ${field.label.toLowerCase()}`}
-                                                        required={field.required}
-                                                        className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                                    />
+                                                    {field.type === 'select' ? (
+                                                        <select
+                                                            value={formData[field.key] || ''}
+                                                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                                                            required={field.required}
+                                                            className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                                        >
+                                                            <option value="">Select {field.label.toLowerCase()}...</option>
+                                                            {field.options?.map((option) => (
+                                                                <option key={option} value={option}>{option}</option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <input
+                                                            type={field.type}
+                                                            value={formData[field.key] || ''}
+                                                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                                                            placeholder={`Your ${field.label.toLowerCase()}`}
+                                                            required={field.required}
+                                                            className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                                                        />
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
