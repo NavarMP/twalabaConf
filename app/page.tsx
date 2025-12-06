@@ -446,6 +446,19 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="mb-12 max-w-4xl mx-auto"
               >
+
+              {/* Session Details */}
+                {currentSessionTitle && (
+                  <div className="py-4">
+                    <p className="text-xs text-primary font-bold uppercase tracking-widest mb-1">Currently Happening</p>
+                    <h4 className="text-lg font-bold text-foreground">{currentSessionTitle}</h4>
+                    {/* {nextSessionDetails && (
+                      <p className="text-sm text-foreground/70 mt-1">{nextSessionDetails}</p>
+                    )} */}
+                  </div>
+                )}
+              
+                {/* Live Header Bar */}
                 <div className="bg-red-600 text-white py-3 px-6 rounded-t-xl flex items-center justify-between shadow-lg">
                   <h3 className="text-xl md:text-2xl font-bold flex items-center gap-3">
                     <span className="relative flex h-3 w-3">
@@ -456,7 +469,9 @@ export default function Home() {
                   </h3>
                   <span className="text-sm bg-white/20 px-3 py-1 rounded-full font-medium">Watch Live</span>
                 </div>
-                <div className="bg-black aspect-video w-full rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-primary/20">
+
+                {/* Video Embed */}
+                <div className={`bg-black aspect-video w-full overflow-hidden shadow-2xl border-x border-b border-primary/20 ${currentSessionTitle ? 'rounded-b-xl' : 'rounded-b-xl'}`}>
                   <iframe
                     src={liveUrl.includes('youtube.com') || liveUrl.includes('youtu.be')
                       ? `https://www.youtube.com/embed/${liveUrl.split('v=')[1]?.split('&')[0] || liveUrl.split('/').pop()}?autoplay=1&mute=1`
@@ -976,24 +991,35 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between pointer-events-none">
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
                 <h3 className="text-white text-lg font-medium pl-2">{selectedItem.title}</h3>
-                <a
-                  href={selectedItem.media_url}
-                  download
-                  onClick={(e) => e.stopPropagation()}
-                  className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-full font-bold hover:bg-white/90 transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FiDownload className="w-5 h-5" />
-                  Download
-                </a>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShare(selectedItem.media_url, selectedItem.title);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-full font-bold hover:bg-white/30 transition-colors backdrop-blur-sm"
+                  >
+                    <FiShare2 className="w-5 h-5" />
+                    Share
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(selectedItem.media_url, selectedItem.title);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-full font-bold hover:bg-white/90 transition-colors"
+                  >
+                    <FiDownload className="w-5 h-5" />
+                    Download
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div >
+    </div>
   );
 }
