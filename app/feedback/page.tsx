@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { FiStar, FiCheck, FiSend, FiHome } from 'react-icons/fi'
+import { FiStar, FiCheck, FiSend, FiHome, FiSun, FiMoon, FiMonitor } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from 'next-themes'
 import Footer from '@/components/Footer'
 
 type FeedbackSection = {
@@ -45,6 +46,7 @@ const defaultSections: FeedbackSection[] = [
 
 export default function FeedbackPage() {
     const [formData, setFormData] = useState<Record<string, string>>({ name: '', phone: '', email: '' })
+    const { theme, setTheme } = useTheme()
     const [fields, setFields] = useState<FeedbackField[]>(defaultFields)
     const [sections, setSections] = useState<FeedbackSection[]>(defaultSections)
     const [loading, setLoading] = useState(true)
@@ -205,10 +207,35 @@ export default function FeedbackPage() {
                         </div>
                         <span className="font-bold text-foreground hidden sm:block">SKSSF Twalaba Conference</span>
                     </Link>
-                    <Link href="/" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-sm font-medium">
-                        <FiHome className="w-4 h-4" />
-                        <span className="hidden sm:block">Home</span>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <div className="flex bg-primary/10 rounded-lg p-1">
+                            <button
+                                onClick={() => setTheme('system')}
+                                className={`p-1.5 rounded-md flex justify-center transition-colors ${theme === 'system' ? 'bg-white text-primary shadow-sm' : 'text-primary/70 hover:text-primary'}`}
+                                title="System Theme"
+                            >
+                                <FiMonitor className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setTheme('light')}
+                                className={`p-1.5 rounded-md flex justify-center transition-colors ${theme === 'light' ? 'bg-white text-primary shadow-sm' : 'text-primary/70 hover:text-primary'}`}
+                                title="Light Theme"
+                            >
+                                <FiSun className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setTheme('dark')}
+                                className={`p-1.5 rounded-md flex justify-center transition-colors ${theme === 'dark' ? 'bg-white text-primary shadow-sm' : 'text-primary/70 hover:text-primary'}`}
+                                title="Dark Theme"
+                            >
+                                <FiMoon className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <Link href="/" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-sm font-medium">
+                            <FiHome className="w-4 h-4" />
+                            <span className="hidden sm:block">Home</span>
+                        </Link>
+                    </div>
                 </div>
             </header>
 

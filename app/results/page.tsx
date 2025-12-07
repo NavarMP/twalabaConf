@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { FiHome, FiLock, FiAlertCircle } from 'react-icons/fi'
+import { FiHome, FiLock, FiAlertCircle, FiMonitor, FiSun, FiMoon } from 'react-icons/fi'
+import { useTheme } from 'next-themes'
 import { Feedback } from '@/types/database'
 import FeedbackList from '@/components/feedback/FeedbackList'
 import StatCard from '@/components/feedback/StatCard'
@@ -12,6 +13,7 @@ import ExportDropdown from '@/components/feedback/ExportDropdown'
 
 export default function ResultsPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
+    const { theme, setTheme } = useTheme()
     const [accessCode, setAccessCode] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -127,7 +129,7 @@ export default function ResultsPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <header className="bg-green-600 text-white py-4 px-6 shadow-lg">
+            <header className="bg-green-600 dark:bg-green-900 text-white py-4 px-6 shadow-lg transition-colors">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 relative hidden sm:block">
@@ -138,10 +140,35 @@ export default function ResultsPage() {
                             <p className="text-white/80 text-xs">Read-Only View</p>
                         </div>
                     </div>
-                    <Link href="/" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm flex items-center gap-2">
-                        <FiHome className="w-4 h-4" />
-                        Home
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <div className="flex bg-white/10 rounded-lg p-1">
+                            <button
+                                onClick={() => setTheme('system')}
+                                className={`p-1.5 rounded-md flex justify-center transition-colors ${theme === 'system' ? 'bg-white text-green-600 shadow-sm' : 'text-white/70 hover:text-white'}`}
+                                title="System Theme"
+                            >
+                                <FiMonitor className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setTheme('light')}
+                                className={`p-1.5 rounded-md flex justify-center transition-colors ${theme === 'light' ? 'bg-white text-green-600 shadow-sm' : 'text-white/70 hover:text-white'}`}
+                                title="Light Theme"
+                            >
+                                <FiSun className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setTheme('dark')}
+                                className={`p-1.5 rounded-md flex justify-center transition-colors ${theme === 'dark' ? 'bg-white text-green-600 shadow-sm' : 'text-white/70 hover:text-white'}`}
+                                title="Dark Theme"
+                            >
+                                <FiMoon className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <Link href="/" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm flex items-center gap-2">
+                            <FiHome className="w-4 h-4" />
+                            Home
+                        </Link>
+                    </div>
                 </div>
             </header>
 

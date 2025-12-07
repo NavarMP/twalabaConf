@@ -4,15 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { FiUsers, FiCalendar, FiImage, FiLogOut, FiHome, FiSettings, FiMoon, FiSun } from 'react-icons/fi'
-import { useTheme } from 'next-themes'
+import { FiUsers, FiCalendar, FiImage, FiSettings } from 'react-icons/fi'
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [mounted, setMounted] = useState(false)
     const router = useRouter()
     const supabase = createClient()
-    const { theme, setTheme } = useTheme()
 
     useEffect(() => {
         const checkUser = async () => {
@@ -29,12 +27,6 @@ export default function AdminDashboard() {
     useEffect(() => {
         setMounted(true)
     }, [])
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut()
-        router.push('/admin/login')
-        router.refresh()
-    }
 
     if (loading) {
         return (
@@ -54,41 +46,6 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
-            <header className="bg-primary text-white py-4 px-6 shadow-lg">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-                        <p className="text-white/70 text-sm">SKSSF Twalaba Conference 2025</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        {/* Theme Toggle */}
-                        {mounted && (
-                            <button
-                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                            >
-                                {theme === 'dark' ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
-                            </button>
-                        )}
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                        >
-                            <FiHome className="w-5 h-5" />
-                            <span>View Site</span>
-                        </Link>
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent/90 transition-colors"
-                        >
-                            <FiLogOut className="w-5 h-5" />
-                            <span>Logout</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-12 px-6">
 

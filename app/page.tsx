@@ -125,13 +125,48 @@ export default function Home() {
     setCurrentPage(1);
   }, [galleryItems, activeTab, sortBy, selectedTag]);
 
-  const handleLike = async (id: string, currentLikes: number) => {
-    // Optimistic update
-    setGalleryItems(prev => prev.map(item =>
-      item.id === id ? { ...item, likes: (item.likes || 0) + 1 } : item
-    ));
+  const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
 
-    await supabase.rpc('increment_likes', { row_id: id });
+  useEffect(() => {
+    const stored = localStorage.getItem('liked_gallery_items');
+    if (stored) {
+      try {
+        setLikedItems(new Set(JSON.parse(stored)));
+      } catch (e) {
+        console.error('Failed to parse liked items', e);
+      }
+    }
+  }, []);
+
+  const handleLike = async (id: string, currentLikes: number) => {
+    const isLiked = likedItems.has(id);
+    const newLikedItems = new Set(likedItems);
+    let newLikes = currentLikes;
+
+    if (isLiked) {
+      newLikedItems.delete(id);
+      newLikes = Math.max(0, currentLikes - 1);
+
+      // Attempt to decrement on server
+      const { error } = await supabase.rpc('decrement_likes', { row_id: id });
+      if (error) {
+        console.warn('decrement_likes RPC failed:', error.message);
+      }
+    } else {
+      newLikedItems.add(id);
+      newLikes = currentLikes + 1;
+      const { error } = await supabase.rpc('increment_likes', { row_id: id });
+      if (error) {
+        console.warn('increment_likes RPC failed:', error.message);
+      }
+    }
+
+    setLikedItems(newLikedItems);
+    localStorage.setItem('liked_gallery_items', JSON.stringify(Array.from(newLikedItems)));
+
+    setGalleryItems(prev => prev.map(item =>
+      item.id === id ? { ...item, likes: newLikes } : item
+    ));
   };
 
   // Helper functions
@@ -1005,6 +1040,19 @@ export default function Home() {
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
                 <h3 className="text-white text-lg font-medium pl-2">{selectedItem.title}</h3>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLike(selectedItem.id, selectedItem.likes || 0);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md transition-all ${likedItems.has(selectedItem.id)
+                      ? 'bg-red-500/20 text-red-500 border border-red-500/30'
+                      : 'bg-black/30 text-white hover:bg-black/50 border border-white/10'
+                      }`}
+                  >
+                    <FiHeart className={`w-3.5 h-3.5 ${likedItems.has(selectedItem.id) ? 'fill-current' : ''}`} />
+                    <span className="text-xs font-medium">{selectedItem.likes || 0}</span>
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

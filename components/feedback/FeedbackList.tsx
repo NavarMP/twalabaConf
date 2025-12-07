@@ -7,6 +7,7 @@ import ExportDropdown from './ExportDropdown'
 import FeedbackReportTemplate from './FeedbackReportTemplate'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
+import { createClient } from '@/lib/supabase/client'
 
 type FeedbackListProps = {
     feedbacks: Feedback[]
@@ -14,9 +15,68 @@ type FeedbackListProps = {
     readOnly?: boolean
 }
 
+type FieldConfig = {
+    key: string
+    label: string
+    labelMl: string
+}
+
+type SectionConfig = {
+    key: string
+    label: string
+    labelMl: string
+}
+
 export default function FeedbackList({ feedbacks, onDelete, readOnly = false }: FeedbackListProps) {
     const [reportFeedback, setReportFeedback] = useState<Feedback | null>(null)
     const reportRef = useRef<HTMLDivElement>(null)
+    const [fieldLabels, setFieldLabels] = useState<Record<string, string>>({})
+    const [sectionLabels, setSectionLabels] = useState<Record<string, string>>({})
+
+    const supabase = createClient()
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            const { data } = await supabase
+                .from('settings')
+                .select('key, value')
+                .in('key', ['feedback_fields', 'feedback_sections'])
+
+            if (data) {
+                const newFieldLabels: Record<string, string> = {}
+                const newSectionLabels: Record<string, string> = {}
+
+                data.forEach(item => {
+                    if (item.key === 'feedback_fields') {
+                        try {
+                            const fields: FieldConfig[] = JSON.parse(item.value)
+                            fields.forEach(f => {
+                                newFieldLabels[f.key] = f.label
+                                // Also handle cases where key might have 'field_' prefix in custom_data
+                                newFieldLabels[`field_${f.key}`] = f.label
+                            })
+                        } catch (e) {
+                            console.error('Failed to parse feedback_fields', e)
+                        }
+                    }
+                    if (item.key === 'feedback_sections') {
+                        try {
+                            const sections: SectionConfig[] = JSON.parse(item.value)
+                            sections.forEach(s => {
+                                newSectionLabels[s.key] = s.label
+                            })
+                        } catch (e) {
+                            console.error('Failed to parse feedback_sections', e)
+                        }
+                    }
+                })
+                setFieldLabels(newFieldLabels)
+                setSectionLabels(newSectionLabels)
+            }
+        }
+        fetchConfig()
+    }, [])
+
 
     useEffect(() => {
         if (reportFeedback && reportRef.current) {
@@ -68,6 +128,17 @@ export default function FeedbackList({ feedbacks, onDelete, readOnly = false }: 
                 )}
             </div>
         )
+    }
+
+    const getLabel = (key: string, type: 'field' | 'section') => {
+        if (type === 'field') {
+            // Check direct match, then with/without field_ prefix
+            return fieldLabels[key] ||
+                fieldLabels[key.replace('field_', '')] ||
+                fieldLabels[`field_${key}`] ||
+                key.replace(/_/g, ' ')
+        }
+        return sectionLabels[key] || key.replace(/_/g, ' ')
     }
 
     return (
@@ -157,7 +228,7 @@ export default function FeedbackList({ feedbacks, onDelete, readOnly = false }: 
                         {feedback.custom_data?.sections && Object.entries(feedback.custom_data.sections).map(([key, data]) => (
                             <div key={key} className="bg-purple-500/5 p-3 rounded-lg">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-bold text-purple-600 capitalize">{key.replace(/_/g, ' ')}:</span>
+                                    <span className="font-bold text-purple-600 capitalize">{getLabel(key, 'section')}:</span>
                                     <span className="text-xs text-foreground/60">({data.rating}/5 stars)</span>
                                 </div>
                                 {data.comments && <p className="ml">{data.comments}</p>}
@@ -167,7 +238,9 @@ export default function FeedbackList({ feedbacks, onDelete, readOnly = false }: 
                         {feedback.custom_data?.fields && Object.entries(feedback.custom_data.fields).map(([key, value]) => (
                             value && (
                                 <div key={key} className="bg-indigo-500/5 p-3 rounded-lg">
-                                    <span className="font-bold text-indigo-600 capitalize">{key.replace(/_/g, ' ')}:</span> <span className="ml">{value}</span>
+                                    <span className="font-bold text-indigo-600 capitalize">
+                                        {getLabel(key, 'field')}:
+                                    </span> <span className="ml">{value}</span>
                                 </div>
                             )
                         ))}

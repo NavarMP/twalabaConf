@@ -258,17 +258,27 @@ export default function GalleryManagement() {
     }
 
     const handleUpdate = async (id: string) => {
-        const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(t => t);
-        const { error } = await supabase.from('gallery').update({
-            title: formData.title,
-            media_url: formData.media_url,
-            media_type: formData.media_type,
-            display_order: formData.display_order,
-            tags: tagsArray
-        }).eq('id', id)
-        if (!error) {
-            setEditingId(null)
-            fetchItems()
+        try {
+            const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(t => t);
+
+            const payload = {
+                title: formData.title,
+                media_url: formData.media_url,
+                media_type: formData.media_type,
+                display_order: formData.display_order,
+                tags: tagsArray
+            };
+
+            const { error } = await supabase.from('gallery').update(payload).eq('id', id);
+
+            if (error) throw error;
+
+            setEditingId(null);
+            fetchItems();
+            alert('Item updated successfully');
+        } catch (error: any) {
+            console.error('Update failed:', error);
+            alert(`Failed to save changes: ${error.message || 'Unknown error'}`);
         }
     }
 
