@@ -125,32 +125,32 @@ export default function FeedbackList({ feedbacks, onDelete, readOnly = false }: 
                     <div className="space-y-2 text-sm">
                         {feedback.overall_comments && (
                             <div className="bg-primary/5 p-3 rounded-lg">
-                                <span className="font-bold text-primary">Overall:</span> <span className="font-noto">{feedback.overall_comments}</span>
+                                <span className="font-bold text-primary">Overall:</span> <span className="ml">{feedback.overall_comments}</span>
                             </div>
                         )}
                         {feedback.sessions_comments && (
                             <div className="bg-secondary/5 p-3 rounded-lg">
-                                <span className="font-bold text-secondary">Sessions:</span> <span className="font-noto">{feedback.sessions_comments}</span>
+                                <span className="font-bold text-secondary">Sessions:</span> <span className="ml">{feedback.sessions_comments}</span>
                             </div>
                         )}
                         {feedback.media_comments && (
                             <div className="bg-accent/5 p-3 rounded-lg">
-                                <span className="font-bold text-accent">Media:</span> <span className="font-noto">{feedback.media_comments}</span>
+                                <span className="font-bold text-accent">Media:</span> <span className="ml">{feedback.media_comments}</span>
                             </div>
                         )}
                         {feedback.volunteers_comments && (
                             <div className="bg-green-500/5 p-3 rounded-lg">
-                                <span className="font-bold text-green-600">Volunteers:</span> <span className="font-noto">{feedback.volunteers_comments}</span>
+                                <span className="font-bold text-green-600">Volunteers:</span> <span className="ml">{feedback.volunteers_comments}</span>
                             </div>
                         )}
                         {feedback.venue_comments && (
                             <div className="bg-blue-500/5 p-3 rounded-lg">
-                                <span className="font-bold text-blue-600">Venue:</span> <span className="font-noto">{feedback.venue_comments}</span>
+                                <span className="font-bold text-blue-600">Venue:</span> <span className="ml">{feedback.venue_comments}</span>
                             </div>
                         )}
                         {feedback.suggestions && (
                             <div className="bg-yellow-500/5 p-3 rounded-lg border-l-4 border-yellow-500">
-                                <span className="font-bold text-yellow-600">Suggestions:</span> <span className="font-noto">{feedback.suggestions}</span>
+                                <span className="font-bold text-yellow-600">Suggestions:</span> <span className="ml">{feedback.suggestions}</span>
                             </div>
                         )}
                         {/* Custom Sections */}
@@ -160,14 +160,14 @@ export default function FeedbackList({ feedbacks, onDelete, readOnly = false }: 
                                     <span className="font-bold text-purple-600 capitalize">{key.replace(/_/g, ' ')}:</span>
                                     <span className="text-xs text-foreground/60">({data.rating}/5 stars)</span>
                                 </div>
-                                {data.comments && <p className="font-noto">{data.comments}</p>}
+                                {data.comments && <p className="ml">{data.comments}</p>}
                             </div>
                         ))}
                         {/* Custom Fields */}
                         {feedback.custom_data?.fields && Object.entries(feedback.custom_data.fields).map(([key, value]) => (
                             value && (
                                 <div key={key} className="bg-indigo-500/5 p-3 rounded-lg">
-                                    <span className="font-bold text-indigo-600 capitalize">{key.replace(/_/g, ' ')}:</span> <span className="font-noto">{value}</span>
+                                    <span className="font-bold text-indigo-600 capitalize">{key.replace(/_/g, ' ')}:</span> <span className="ml">{value}</span>
                                 </div>
                             )
                         ))}
