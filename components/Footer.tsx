@@ -3,7 +3,7 @@
 import { FaInstagram, FaWhatsapp, FaTelegram } from "react-icons/fa";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-export default function Footer() {
+export default function Footer({ simple = false }: { simple?: boolean }) {
     const { t } = useLanguage();
 
     return (
@@ -11,9 +11,13 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     <div className="mb-4 md:mb-0 text-center md:text-left">
-                        <h3 className="text-xl font-bold font-poppins">{t.hero.title}</h3>
-                        <p className="text-sm text-gray-300 mt-1">{t.hero.date}</p>
-                        <p className="text-sm text-gray-300">{t.hero.location}</p>
+                        <h3 className="text-xl font-bold font-poppins">{simple ? "SKSSF Twalaba Conference" : t.hero.title}</h3>
+                        {!simple && (
+                            <>
+                                <p className="text-sm text-gray-300 mt-1">{t.hero.date}</p>
+                                <p className="text-sm text-gray-300">{t.hero.location}</p>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex space-x-6">

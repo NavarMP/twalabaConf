@@ -51,9 +51,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         t: translations[language],
     };
 
-    if (!mounted) {
-        return null; // or a loading spinner
-    }
+    // Removed mounting check to prevent SSR blocking
+    // if (!mounted) {
+    //    return null; // or a loading spinner
+    // }
 
     return (
         <LanguageContext.Provider value={value}>

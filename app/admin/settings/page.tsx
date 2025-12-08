@@ -1,19 +1,40 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { FiArrowLeft, FiSave, FiSettings } from 'react-icons/fi'
+import { FiArrowLeft, FiSave, FiSettings, FiUpload, FiImage, FiTrash2, FiPlus, FiYoutube, FiEdit2 } from 'react-icons/fi'
+import imageCompression from 'browser-image-compression';
+import ImageUploader from '@/components/ImageUploader';
 
 export default function SettingsManagement() {
-    const [liveUrl, setLiveUrl] = useState('')
-    const [sessionTitle, setSessionTitle] = useState('')
-    const [nextSessionDetails, setNextSessionDetails] = useState('')
-    const [upcomingStreamUrl, setUpcomingStreamUrl] = useState('')
-    const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([])
+    const [settings, setSettings] = useState<any>({
+        conference_mode: 'conference',
+        registration_url: '',
+        theme_song_url: '',
+        thank_you_message: '',
+        post_conf_bg_image: '',
+        conference_date: '',
+        previous_sessions: '[]' // JSON string
+    })
+    const [sessions, setSessions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [uploading, setUploading] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+    // Session Form State
+    const [newSession, setNewSession] = useState({ title: '', url: '', thumbnail: '' })
+    const [isAddingSession, setIsAddingSession] = useState(false)
+    const [editIndex, setEditIndex] = useState<number | null>(null)
+    const formRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (isAddingSession && formRef.current) {
+            formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [isAddingSession, editIndex])
+
     const supabase = createClient()
 
     useEffect(() => {
@@ -24,22 +45,23 @@ export default function SettingsManagement() {
         const { data } = await supabase
             .from('settings')
             .select('*')
-            .in('key', ['live_streaming_url', 'current_session_title', 'previous_sessions', 'next_session_details', 'upcoming_stream_url'])
+            .in('key', ['conference_mode', 'registration_url', 'theme_song_url', 'thank_you_message', 'post_conf_bg_image', 'conference_date', 'previous_sessions'])
 
         if (data) {
+            const newSettings: any = { ...settings }
             data.forEach(item => {
-                if (item.key === 'live_streaming_url') setLiveUrl(item.value)
-                if (item.key === 'current_session_title') setSessionTitle(item.value)
-                if (item.key === 'next_session_details') setNextSessionDetails(item.value)
-                if (item.key === 'upcoming_stream_url') setUpcomingStreamUrl(item.value)
-                if (item.key === 'previous_sessions') {
-                    try {
-                        setPreviousSessions(JSON.parse(item.value))
-                    } catch (e) {
-                        setPreviousSessions([])
-                    }
-                }
+                newSettings[item.key] = item.value
             })
+            setSettings(newSettings)
+
+            try {
+                if (newSettings.previous_sessions) {
+                    setSessions(JSON.parse(newSettings.previous_sessions))
+                }
+            } catch (e) {
+                console.error("Failed to parse sessions", e)
+                setSessions([])
+            }
         }
         setLoading(false)
     }
@@ -48,63 +70,126 @@ export default function SettingsManagement() {
         setSaving(true)
         setMessage(null)
 
-        const updates = [
-            { key: 'live_streaming_url', value: liveUrl, description: 'URL for the live streaming button' },
-            { key: 'current_session_title', value: sessionTitle, description: 'Title of the current session' },
-            { key: 'next_session_details', value: nextSessionDetails, description: 'Details about the upcoming session' },
-            { key: 'upcoming_stream_url', value: upcomingStreamUrl, description: 'URL for the upcoming scheduled stream' },
-            { key: 'previous_sessions', value: JSON.stringify(previousSessions), description: 'List of previous sessions' }
-        ]
-
-        let errors: string[] = []
-
-        for (const update of updates) {
-            const { data: existing, error: fetchError } = await supabase
-                .from('settings')
-                .select('key')
-                .eq('key', update.key)
-                .maybeSingle()
-
-            if (fetchError) {
-                errors.push(`Check failed for ${update.key}: ${fetchError.message}`)
-                continue
+        try {
+            // Update settings with current sessions state
+            const finalSettings = {
+                ...settings,
+                previous_sessions: JSON.stringify(sessions)
             }
 
-            if (existing) {
-                const { error } = await supabase
-                    .from('settings')
-                    .update({ value: update.value })
-                    .eq('key', update.key)
-                if (error) errors.push(`Update failed for ${update.key}: ${error.message}`)
+            const updates = Object.keys(finalSettings).map(key => ({
+                key,
+                value: finalSettings[key]
+            }))
+
+            const { error } = await supabase.from('settings').upsert(updates, { onConflict: 'key' })
+
+            if (error) throw error
+            setMessage({ type: 'success', text: 'Settings saved successfully!' })
+        } catch (error: any) {
+            console.error(error)
+            setMessage({ type: 'error', text: 'Failed to save settings: ' + error.message })
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleImageUpload = async (file: File) => {
+        setUploading(true);
+        try {
+            const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true }
+            const compressedFile = await imageCompression(file, options);
+            const formData = new FormData();
+            formData.append('file', compressedFile);
+
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.success) {
+                setSettings((prev: any) => ({ ...prev, post_conf_bg_image: data.url }));
+                setMessage({ type: 'success', text: 'Image uploaded successfully!' });
             } else {
-                const { error } = await supabase
-                    .from('settings')
-                    .insert([update])
-                if (error) errors.push(`Insert failed for ${update.key}: ${error.message}`)
+                setMessage({ type: 'error', text: 'Upload failed: ' + data.error });
             }
+        } catch (error) {
+            console.error(error);
+            setMessage({ type: 'error', text: 'Upload failed.' });
+        } finally {
+            setUploading(false);
         }
+    };
 
-        if (errors.length > 0) {
-            setMessage({ type: 'error', text: `Failed: ${errors.join(', ')}` })
-            console.error(errors)
+    // --- Session Management Logic ---
+
+    const extractYouTubeId = (url: string) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    const handleSessionUrlChange = (url: string) => {
+        setNewSession(prev => ({ ...prev, url }));
+        const videoId = extractYouTubeId(url);
+        if (videoId && !newSession.thumbnail) {
+            setNewSession(prev => ({
+                ...prev,
+                thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+            }));
+        }
+    }
+
+    const handleSessionThumbnailUpload = async (file: File) => {
+        setUploading(true);
+        try {
+            const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1280, useWebWorker: true }
+            const compressedFile = await imageCompression(file, options);
+            const formData = new FormData();
+            formData.append('file', compressedFile);
+
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.success) {
+                setNewSession(prev => ({ ...prev, thumbnail: data.url }));
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    const addSession = () => {
+        if (!newSession.title || !newSession.url) return;
+
+        if (editIndex !== null) {
+            const updatedSessions = [...sessions];
+            updatedSessions[editIndex] = { ...newSession, id: updatedSessions[editIndex].id || Date.now().toString() };
+            setSessions(updatedSessions);
+            setEditIndex(null);
         } else {
-            setMessage({ type: 'success', text: 'Settings saved successfully' })
+            setSessions([...sessions, { ...newSession, id: Date.now().toString() }]);
         }
-        setSaving(false)
+
+        setNewSession({ title: '', url: '', thumbnail: '' });
+        setIsAddingSession(false);
     }
 
-    const addPreviousSession = () => {
-        setPreviousSessions([...previousSessions, { title: '', url: '' }])
+    const startEdit = (index: number) => {
+        setNewSession(sessions[index]);
+        setEditIndex(index);
+        setIsAddingSession(true);
     }
 
-    const removePreviousSession = (index: number) => {
-        setPreviousSessions(previousSessions.filter((_, i) => i !== index))
-    }
-
-    const updatePreviousSession = (index: number, field: 'title' | 'url', value: string) => {
-        const newSessions = [...previousSessions]
-        newSessions[index] = { ...newSessions[index], [field]: value }
-        setPreviousSessions(newSessions)
+    const removeSession = (index: number) => {
+        const newSessions = [...sessions];
+        newSessions.splice(index, 1);
+        setSessions(newSessions);
+        if (editIndex === index) {
+            setEditIndex(null);
+            setIsAddingSession(false);
+            setNewSession({ title: '', url: '', thumbnail: '' });
+        }
     }
 
     if (loading) {
@@ -132,18 +217,243 @@ export default function SettingsManagement() {
             </header>
 
             <main className="max-w-7xl mx-auto py-8 px-6">
-                <div className="max-w-2xl mx-auto bg-primary/5 border border-primary/20 rounded-2xl p-8 text-center">
-                    <FiSettings className="w-12 h-12 text-primary mx-auto mb-4" />
-                    <h2 className="text-xl font-bold mb-2">Settings Moved</h2>
-                    <p className="text-foreground/70 mb-6">
-                        Live Streaming and Session settings have been moved to the Schedule page for easier access.
-                    </p>
-                    <Link
-                        href="/admin/schedule"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all"
-                    >
-                        Go to Schedule Settings
-                    </Link>
+                <div className="grid gap-8">
+                    {/* Conference Mode Card */}
+                    <div className="bg-background border border-primary/20 rounded-2xl p-6 shadow-sm">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <FiSettings className="text-primary" />
+                            Conference Mode
+                        </h2>
+
+                        <div className="grid gap-6">
+                            <div>
+                                <label className="block text-sm font-bold mb-2">Current Mode</label>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'pre', label: 'Pre-Conference' },
+                                        { id: 'conference', label: 'Live Conference' },
+                                        { id: 'post', label: 'Post-Conference' }
+                                    ].map((mode) => (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => setSettings({ ...settings, conference_mode: mode.id })}
+                                            className={`py-3 px-4 rounded-xl border-2 font-bold transition-all ${settings.conference_mode === mode.id
+                                                ? 'border-primary bg-primary text-white'
+                                                : 'border-primary/10 hover:border-primary/30 text-foreground/70'
+                                                }`}
+                                        >
+                                            {mode.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Pre-Conference Settings */}
+                            {settings.conference_mode === 'pre' && (
+                                <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/10 grid gap-4 animate-in fade-in slide-in-from-top-4">
+                                    <h3 className="font-bold text-secondary">Pre-Conference Configuration</h3>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">Conference Date</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={settings.conference_date || ''}
+                                            onChange={(e) => setSettings({ ...settings, conference_date: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-lg bg-background border border-primary/10 focus:border-primary outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">Registration URL (Fallback / Optional)</label>
+                                        <input
+                                            type="text"
+                                            value={settings.registration_url || ''}
+                                            onChange={(e) => setSettings({ ...settings, registration_url: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-lg bg-background border border-primary/10 focus:border-primary outline-none"
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">Theme Song URL</label>
+                                        <input
+                                            type="text"
+                                            value={settings.theme_song_url || ''}
+                                            onChange={(e) => setSettings({ ...settings, theme_song_url: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-lg bg-background border border-primary/10 focus:border-primary outline-none"
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Post-Conference Settings */}
+                            {settings.conference_mode === 'post' && (
+                                <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/10 grid gap-4 animate-in fade-in slide-in-from-top-4">
+                                    <h3 className="font-bold text-secondary">Post-Conference Configuration</h3>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">Thank You Message</label>
+                                        <textarea
+                                            value={settings.thank_you_message || ''}
+                                            onChange={(e) => setSettings({ ...settings, thank_you_message: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-lg bg-background border border-primary/10 focus:border-primary outline-none min-h-[100px]"
+                                            placeholder="Thank you for making history with us..."
+                                        />
+                                    </div>
+
+                                    {/* BG Image Upload */}
+                                    <div className="mt-2">
+                                        <div className="flex flex-col gap-2">
+                                            <ImageUploader
+                                                label="Background Image"
+                                                currentImage={settings.post_conf_bg_image}
+                                                onUpload={handleImageUpload}
+                                                uploading={uploading}
+                                            />
+                                            <div className="mt-2">
+                                                <label className="text-xs font-bold uppercase text-foreground/30 mb-1 block">Or enter URL directly</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.post_conf_bg_image || ''}
+                                                    onChange={(e) => setSettings({ ...settings, post_conf_bg_image: e.target.value })}
+                                                    className="w-full px-3 py-1.5 text-sm rounded-lg bg-background border border-primary/10 focus:border-primary outline-none text-foreground/50 placeholder:text-foreground/20"
+                                                    placeholder="https://..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Sessions Archive Management */}
+                    <div className="bg-background border border-primary/20 rounded-2xl p-6 shadow-sm">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <FiUpload className="text-primary" />
+                            Sessions Archive
+                        </h2>
+
+                        <div className="space-y-4">
+                            {/* List Existing Sessions */}
+                            {sessions.length > 0 && (
+                                <div className="grid gap-3">
+                                    {sessions.map((session, idx) => (
+                                        <div key={idx} className="flex items-center gap-4 p-3 bg-secondary/5 rounded-lg border border-secondary/10 group">
+                                            <div className="w-24 h-16 bg-black/20 rounded-md overflow-hidden relative flex-shrink-0">
+                                                {session.thumbnail ? (
+                                                    <img src={session.thumbnail} alt={session.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full w-full text-foreground/20"><FiImage /></div>
+                                                )}
+                                            </div>
+                                            <div className="flex-grow min-w-0">
+                                                <h4 className="font-bold truncate">{session.title}</h4>
+                                                <p className="text-xs text-foreground/60 truncate">{session.url}</p>
+                                            </div>
+                                            <div className="flex gap-1 transition-opacity">
+                                                <button
+                                                    onClick={() => startEdit(idx)}
+                                                    className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <FiEdit2 />
+                                                </button>
+                                                <button
+                                                    onClick={() => removeSession(idx)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Remove"
+                                                >
+                                                    <FiTrash2 />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Add New Session */}
+                            {!isAddingSession ? (
+                                <button
+                                    onClick={() => setIsAddingSession(true)}
+                                    className="w-full py-3 border-2 border-dashed border-primary/20 rounded-xl flex items-center justify-center gap-2 text-primary font-bold hover:bg-primary/5 hover:border-primary/40 transition-all"
+                                >
+                                    <FiPlus /> Add Previous Session
+                                </button>
+                            ) : (
+                                <div ref={formRef} className="p-4 bg-primary/5 rounded-xl border border-primary/10 animate-in fade-in zoom-in-95">
+                                    <h4 className="font-bold text-sm mb-4">{editIndex !== null ? 'Edit Session' : 'Add New Session'}</h4>
+                                    <div className="grid gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">Session Title</label>
+                                            <input
+                                                type="text"
+                                                value={newSession.title}
+                                                onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
+                                                className="w-full px-4 py-2 rounded-lg bg-background border border-primary/10 focus:border-primary outline-none"
+                                                placeholder="e.g. Opening Ceremony"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">YouTube URL / Video Link</label>
+                                            <input
+                                                type="text"
+                                                value={newSession.url}
+                                                onChange={(e) => handleSessionUrlChange(e.target.value)}
+                                                className="w-full px-4 py-2 rounded-lg bg-background border border-primary/10 focus:border-primary outline-none"
+                                                placeholder="https://youtube.com/..."
+                                            />
+                                            <p className="text-[10px] text-foreground/40 mt-1">YouTube thumbnails are extracted automatically.</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-foreground/50 mb-1">Thumbnail (Optional)</label>
+                                            <ImageUploader
+                                                label="Upload Custom Thumbnail"
+                                                currentImage={newSession.thumbnail}
+                                                onUpload={handleSessionThumbnailUpload}
+                                                uploading={uploading}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2 justify-end mt-2">
+                                            <button
+                                                onClick={() => { setIsAddingSession(false); setEditIndex(null); setNewSession({ title: '', url: '', thumbnail: '' }); }}
+                                                className="px-4 py-2 text-sm font-bold text-foreground/60 hover:bg-black/5 rounded-lg"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={addSession}
+                                                disabled={!newSession.title || !newSession.url}
+                                                className="px-6 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                                            >
+                                                {editIndex !== null ? 'Update Session' : 'Add Session'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="flex items-center gap-2 px-8 py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50"
+                        >
+                            {saving ? (
+                                <>Saving...</>
+                            ) : (
+                                <>
+                                    <FiSave /> Save Changes
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {message && (
+                        <div className={`p-4 rounded-xl text-center font-bold ${message.type === 'success' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
+                            {message.text}
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

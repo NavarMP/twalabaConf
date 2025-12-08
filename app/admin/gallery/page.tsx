@@ -110,6 +110,7 @@ export default function GalleryManagement() {
     const handleBulkSave = async () => {
         const updates = Object.entries(bulkEditData).map(async ([id, data]) => {
             const tagsArray = data.tags.split(',').map(t => t.trim()).filter(t => t);
+            // Ensure unique tags when dealing with bulk updates if needed, logic handled in UI
             return supabase.from('gallery').update({
                 title: data.title,
                 display_order: data.display_order,
@@ -146,6 +147,31 @@ export default function GalleryManagement() {
 
         // Return as is for other URLs (Instagram, Maps, etc.)
         return input;
+    }
+
+    // Helper to manage tags string
+    const updateTagsString = (currentTags: string, action: { type: 'day' | 'carousel' | 'other', value: string | boolean }) => {
+        let tags = currentTags.split(',').map(t => t.trim()).filter(t => t);
+        const dayTags = ['day1', 'day2'];
+        const carouselTag = 'carousel';
+
+        if (action.type === 'day') {
+            // Remove existing day tags
+            tags = tags.filter(t => !dayTags.includes(t.toLowerCase()));
+            // Add new day tag if not 'none'
+            if (action.value && action.value !== 'none') {
+                tags.push(action.value as string);
+            }
+        } else if (action.type === 'carousel') {
+            // Remove existing carousel tag
+            tags = tags.filter(t => t.toLowerCase() !== carouselTag);
+            // Add if true
+            if (action.value) {
+                tags.push(carouselTag);
+            }
+        }
+
+        return tags.join(', ');
     }
 
     const handleLinkSubmit = async () => {
@@ -502,12 +528,40 @@ export default function GalleryManagement() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 opacity-80">Tags (Comma separated)</label>
+                                    <label className="block text-sm font-medium mb-1 opacity-80">Settings</label>
+                                    <div className="flex flex-wrap gap-4 mb-3">
+                                        {/* Day Selector */}
+                                        <div className="flex items-center gap-2 bg-secondary/5 px-3 py-2 rounded-lg border border-secondary/10">
+                                            <span className="text-xs font-bold text-primary uppercase">Day:</span>
+                                            <select
+                                                value={linkTags.toLowerCase().includes('day1') ? 'day1' : linkTags.toLowerCase().includes('day2') ? 'day2' : 'none'}
+                                                onChange={(e) => setLinkTags(updateTagsString(linkTags, { type: 'day', value: e.target.value }))}
+                                                className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer py-0 pl-0 pr-6"
+                                            >
+                                                <option value="none">None</option>
+                                                <option value="day1">Day 1</option>
+                                                <option value="day2">Day 2</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Carousel Toggle */}
+                                        <label className="flex items-center gap-2 cursor-pointer bg-secondary/5 px-3 py-2 rounded-lg border border-secondary/10 hover:bg-secondary/10 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={linkTags.toLowerCase().includes('carousel')}
+                                                onChange={(e) => setLinkTags(updateTagsString(linkTags, { type: 'carousel', value: e.target.checked }))}
+                                                className="rounded text-primary focus:ring-primary w-4 h-4"
+                                            />
+                                            <span className="text-xs font-bold text-primary uppercase">Show in Carousel</span>
+                                        </label>
+                                    </div>
+
+                                    <label className="block text-sm font-medium mb-1 opacity-80">Other Tags (Comma separated)</label>
                                     <input
                                         type="text"
                                         value={linkTags}
                                         onChange={(e) => setLinkTags(e.target.value)}
-                                        placeholder="e.g. day1, speech, crowd"
+                                        placeholder="e.g. speech, crowd"
                                         className="w-full px-4 py-3 rounded-xl border border-primary/20 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                                     />
                                 </div>
@@ -610,11 +664,40 @@ export default function GalleryManagement() {
                                         </div>
                                         <div>
                                             <label className="text-xs text-foreground/50 block mb-1">Tags</label>
+
+                                            <div className="flex gap-2 mb-2">
+                                                <select
+                                                    className="text-xs border rounded bg-background px-1 py-1"
+                                                    value={bulkEditData[item.id].tags.toLowerCase().includes('day1') ? 'day1' : bulkEditData[item.id].tags.toLowerCase().includes('day2') ? 'day2' : 'none'}
+                                                    onChange={(e) => setBulkEditData({
+                                                        ...bulkEditData,
+                                                        [item.id]: { ...bulkEditData[item.id], tags: updateTagsString(bulkEditData[item.id].tags, { type: 'day', value: e.target.value }) }
+                                                    })}
+                                                >
+                                                    <option value="none">Day: None</option>
+                                                    <option value="day1">Day 1</option>
+                                                    <option value="day2">Day 2</option>
+                                                </select>
+
+                                                <label className="flex items-center gap-1 cursor-pointer bg-secondary/5 px-2 py-1 rounded border border-secondary/10">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={bulkEditData[item.id].tags.toLowerCase().includes('carousel')}
+                                                        onChange={(e) => setBulkEditData({
+                                                            ...bulkEditData,
+                                                            [item.id]: { ...bulkEditData[item.id], tags: updateTagsString(bulkEditData[item.id].tags, { type: 'carousel', value: e.target.checked }) }
+                                                        })}
+                                                        className="w-3 h-3 rounded"
+                                                    />
+                                                    <span className="text-[10px] uppercase font-bold">Carousel</span>
+                                                </label>
+                                            </div>
+
                                             <input
                                                 type="text"
                                                 className="w-full px-2 py-1 text-sm border rounded bg-background"
                                                 value={bulkEditData[item.id].tags}
-                                                placeholder="e.g. day1, speech"
+                                                placeholder="e.g. speech"
                                                 onChange={(e) => setBulkEditData({
                                                     ...bulkEditData,
                                                     [item.id]: { ...bulkEditData[item.id], tags: e.target.value }
@@ -654,9 +737,30 @@ export default function GalleryManagement() {
                                             onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
                                             className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
                                         />
+                                        <div className="flex flex-wrap gap-2 mb-2 p-2 bg-secondary/5 rounded-lg border border-secondary/10">
+                                            <select
+                                                value={formData.tags.toLowerCase().includes('day1') ? 'day1' : formData.tags.toLowerCase().includes('day2') ? 'day2' : 'none'}
+                                                onChange={(e) => setFormData({ ...formData, tags: updateTagsString(formData.tags, { type: 'day', value: e.target.value }) })}
+                                                className="bg-background border border-primary/20 text-xs font-bold rounded px-2 py-1 focus:ring-primary"
+                                            >
+                                                <option value="none">Day: None</option>
+                                                <option value="day1">Day 1</option>
+                                                <option value="day2">Day 2</option>
+                                            </select>
+
+                                            <label className="flex items-center gap-2 cursor-pointer bg-background px-2 py-1 rounded border border-primary/20 hover:border-primary transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.tags.toLowerCase().includes('carousel')}
+                                                    onChange={(e) => setFormData({ ...formData, tags: updateTagsString(formData.tags, { type: 'carousel', value: e.target.checked }) })}
+                                                    className="rounded text-primary focus:ring-primary w-4 h-4"
+                                                />
+                                                <span className="text-xs font-bold text-primary uppercase">Show in Carousel</span>
+                                            </label>
+                                        </div>
                                         <input
                                             type="text"
-                                            placeholder="Tags (comma separated)"
+                                            placeholder="Other Tags (comma separated)"
                                             value={formData.tags}
                                             onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                                             className="w-full px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"

@@ -29,7 +29,7 @@ export default function ScheduleManagement() {
     const [liveUrl, setLiveUrl] = useState('')
     const [upcomingStreamUrl, setUpcomingStreamUrl] = useState('')
     const [nextSessionDetails, setNextSessionDetails] = useState('')
-    const [previousSessions, setPreviousSessions] = useState<{ title: string, url: string }[]>([])
+
     const [showLiveSettings, setShowLiveSettings] = useState(false)
     const [settingsSaving, setSettingsSaving] = useState(false)
 
@@ -48,7 +48,7 @@ export default function ScheduleManagement() {
         const { data: settingsData } = await supabase
             .from('settings')
             .select('*')
-            .in('key', ['current_session_title', 'live_streaming_url', 'upcoming_stream_url', 'next_session_details', 'previous_sessions'])
+            .in('key', ['current_session_title', 'live_streaming_url', 'upcoming_stream_url', 'next_session_details'])
 
         if (settingsData) {
             settingsData.forEach(item => {
@@ -56,13 +56,7 @@ export default function ScheduleManagement() {
                 if (item.key === 'live_streaming_url') setLiveUrl(item.value)
                 if (item.key === 'upcoming_stream_url') setUpcomingStreamUrl(item.value)
                 if (item.key === 'next_session_details') setNextSessionDetails(item.value)
-                if (item.key === 'previous_sessions') {
-                    try {
-                        setPreviousSessions(JSON.parse(item.value))
-                    } catch (e) {
-                        setPreviousSessions([])
-                    }
-                }
+
             })
         }
 
@@ -249,7 +243,7 @@ export default function ScheduleManagement() {
             { key: 'live_streaming_url', value: liveUrl },
             { key: 'upcoming_stream_url', value: upcomingStreamUrl },
             { key: 'next_session_details', value: nextSessionDetails },
-            { key: 'previous_sessions', value: JSON.stringify(previousSessions) }
+
         ]
 
         await Promise.all(updates.map(update =>
@@ -261,19 +255,7 @@ export default function ScheduleManagement() {
         alert('Live settings saved!')
     }
 
-    const addPreviousSession = () => {
-        setPreviousSessions([...previousSessions, { title: '', url: '' }])
-    }
 
-    const removePreviousSession = (index: number) => {
-        setPreviousSessions(previousSessions.filter((_, i) => i !== index))
-    }
-
-    const updatePreviousSession = (index: number, field: 'title' | 'url', value: string) => {
-        const newSessions = [...previousSessions]
-        newSessions[index] = { ...newSessions[index], [field]: value }
-        setPreviousSessions(newSessions)
-    }
 
     const startEdit = (item: ScheduleItem) => {
         setEditingId(item.id)
@@ -635,34 +617,7 @@ export default function ScheduleManagement() {
                                 </div>
                             </div>
 
-                            <div className="mb-6">
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-medium opacity-80">Previous Sessions</label>
-                                    <button onClick={addPreviousSession} className="text-xs bg-secondary/10 hover:bg-secondary/20 text-secondary px-2 py-1 rounded">+ Add Session</button>
-                                </div>
-                                <div className="space-y-2">
-                                    {previousSessions.map((session, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Title"
-                                                value={session.title}
-                                                onChange={(e) => updatePreviousSession(index, 'title', e.target.value)}
-                                                className="flex-1 px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
-                                            />
-                                            <input
-                                                type="url"
-                                                placeholder="URL"
-                                                value={session.url}
-                                                onChange={(e) => updatePreviousSession(index, 'url', e.target.value)}
-                                                className="flex-1 px-3 py-2 rounded-lg border border-primary/20 bg-background text-sm"
-                                            />
-                                            <button onClick={() => removePreviousSession(index)} className="p-2 text-red-500 hover:bg-red-50 rounded"><FiTrash2 size={14} /></button>
-                                        </div>
-                                    ))}
-                                    {previousSessions.length === 0 && <p className="text-xs text-foreground/40 italic">No previous sessions.</p>}
-                                </div>
-                            </div>
+
 
                             <button
                                 onClick={handleSaveLiveSettings}

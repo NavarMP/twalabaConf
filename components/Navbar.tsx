@@ -8,10 +8,12 @@ import TopMenu from "./TopMenu";
 import Search from "./Search";
 import { createClient } from "@/lib/supabase/client";
 import { Guest, GalleryItem } from "@/types/database";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-export default function Navbar() {
+export default function Navbar({ showDock = true, isTransparent = false }: { showDock?: boolean, isTransparent?: boolean }) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const { t } = useLanguage();
 
     // Data for search
     const [guests, setGuests] = useState<Guest[]>([]);
@@ -49,19 +51,31 @@ export default function Navbar() {
                 className={`fixed top-6 left-6 z-50 transition-all duration-300 ${scrolled ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'
                     }`}
             >
-                <Link href="/" onClick={() => window.scrollTo(0, 0)}>
+                <Link href="/" onClick={() => window.scrollTo(0, 0)} className="flex items-center gap-4">
                     <div className="relative h-12 w-12 drop-shadow-lg cursor-pointer hover:scale-105 transition-transform">
                         <Image
                             src="/assets/Logo.svg"
                             alt="SKSSF Twalaba Conf Logo"
                             fill
-                            className="object-contain"
+                            className={`object-contain ${isTransparent ? 'brightness-0 invert' : ''}`}
                         />
+                    </div>
+                    {/* Title Text with animation */}
+                    <div className={`hidden md:flex flex-col drop-shadow-md ${isTransparent ? 'text-white' : 'text-white'}`}>
+                        {/* Note: Original code was already text-white, keeping it white. 
+                           If original was dark on some backgrounds, this forces it. 
+                           The previous code had 'text-white' hardcoded, check if that was intentional for all modes.
+                           Assuming yes, as Navbar usually overlays hero. 
+                        */}
+                        <span className="text-sm font-bold tracking-widest leading-none font-cooper">SKSSF</span>
+                        <span className="text-lg font-bold leading-none tracking-tight">
+                            {t.hero.title.replace("SKSSF ", "").replace(" 2025", "")}
+                        </span>
                     </div>
                 </Link>
             </div>
 
-            <DockNav />
+            {showDock && <DockNav />}
             <TopMenu onSearchClick={() => setIsSearchOpen(true)} />
 
             <Search

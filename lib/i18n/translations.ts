@@ -63,6 +63,13 @@ export const translations = {
         footer: {
             copyright: "© 2025 SKSSF Twalaba Conference. All rights reserved.",
             developedBy: "Developed by",
+        },
+        postConference: {
+            thankYou: "Thank You",
+            gallery: "Gallery",
+            feedback: "Feedback",
+            visitFullSite: "Visit",
+            conferenceLabel: "Conference '25"
         }
     },
     ml: {
@@ -127,6 +134,13 @@ export const translations = {
         footer: {
             copyright: "© 2025 SKSSF ത്വലബ കോൺഫറൻസ്. എല്ലാ അവകാശങ്ങളും നിക്ഷിപ്തം.",
             developedBy: "Developed by",
+        },
+        postConference: {
+            thankYou: "നന്ദി",
+            gallery: "ഗാലറി",
+            feedback: "അഭിപ്രായം",
+            visitFullSite: "സന്ദർശിക്കുക",
+            conferenceLabel: "കോൺഫറൻസ് '25"
         }
     }
 };

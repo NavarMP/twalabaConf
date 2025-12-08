@@ -13,7 +13,7 @@ interface TopMenuProps {
 export default function TopMenu({ onSearchClick }: TopMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
     const { theme, setTheme } = useTheme();
-    const { language, setLanguage } = useLanguage();
+    const { language, setLanguage, t } = useLanguage();
 
     // Scroll visibility
     const [isVisible, setIsVisible] = useState(true);
@@ -101,7 +101,7 @@ export default function TopMenu({ onSearchClick }: TopMenuProps) {
                                     <div className="p-2 rounded-lg bg-primary/10 text-primary">
                                         <FiInfo className="w-4 h-4" />
                                     </div>
-                                    <span className="font-medium text-sm">About Conference</span>
+                                    <span className="font-medium text-sm">{t.about.title}</span>
                                 </button>
 
                                 {/* Theme Toggle */}
